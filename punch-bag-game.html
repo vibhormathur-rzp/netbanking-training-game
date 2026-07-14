@@ -1,0 +1,1666 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>EVOLVE NETBANKING</title>
+<style>
+  :root{
+    --accent:#ff5252;
+    --accent2:#ffd166;
+  }
+  *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body{
+    margin:0; padding:0; width:100%; height:100%;
+    overflow:hidden; background:#050208;
+    font-family:'Arial Black', 'Arial', sans-serif;
+    user-select:none; -webkit-user-select:none;
+    touch-action:none;
+  }
+  #app{ position:fixed; inset:0; overflow:hidden; }
+
+  /* ---------- BACKGROUND LAYERS (crossfade) ---------- */
+  .bg-layer{
+    position:absolute; inset:0;
+    transition:opacity 1.1s ease;
+    opacity:0;
+  }
+  .bg-layer.active{ opacity:1; }
+  #bgLayerA{ z-index:1; }
+  #bgLayerB{ z-index:2; }
+
+  /* spotlights */
+  .spotlight{
+    position:absolute; top:-10%; width:60%; height:120%;
+    background:radial-gradient(ellipse at top, rgba(255,255,255,0.18), rgba(255,255,255,0) 60%);
+    filter:blur(2px);
+    mix-blend-mode:screen;
+  }
+  .spotlight.l{ left:-15%; transform:rotate(12deg); }
+  .spotlight.r{ right:-15%; transform:rotate(-12deg); }
+
+  /* ring floor */
+  #ringFloor{
+    position:absolute; left:50%; bottom:0; width:88vw; height:34vh;
+    transform:translateX(-50%);
+    background:linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.55) 100%);
+    border-radius:50% 50% 0 0 / 18% 18% 0 0;
+    z-index:3;
+  }
+  #ringMat{
+    position:absolute; left:50%; bottom:0; width:70vw; height:20vh;
+    transform:translateX(-50%);
+    background:radial-gradient(ellipse at center, var(--mat-color,#7a1f2b) 0%, #2a0d12 85%);
+    border-radius:50%;
+    box-shadow:0 0 60px rgba(0,0,0,0.6) inset;
+    z-index:3;
+  }
+  .ring-post{
+    position:absolute; bottom:6vh; width:0.9vw; height:26vh;
+    background:linear-gradient(180deg, var(--post-color,#c9a227), #6b5313);
+    border-radius:4px;
+    z-index:4;
+    box-shadow:0 0 10px rgba(0,0,0,0.5);
+  }
+  .ring-post.left{ left:9vw; }
+  .ring-post.right{ right:9vw; }
+  .rope{
+    position:absolute; left:9.4vw; right:9.4vw;
+    height:0.5vh;
+    background:linear-gradient(90deg, transparent, var(--rope-color,#e6c15c), transparent);
+    z-index:4;
+    border-radius:4px;
+  }
+
+  /* ---------- CROWD ---------- */
+  #crowd{
+    position:absolute; top:0; left:0; width:100%; height:26vh;
+    z-index:2; overflow:hidden;
+  }
+  .crowd-dot{
+    position:absolute; border-radius:50% 50% 45% 45%;
+    animation:cheer ease-in-out infinite;
+  }
+  @keyframes cheer{
+    0%,100%{ transform:translateY(0) scale(1); }
+    50%{ transform:translateY(-38%) scale(1.06); }
+  }
+  #crowdFront{
+    position:absolute; bottom:20vh; left:0; width:100%; height:8vh;
+    z-index:3; overflow:hidden;
+  }
+
+  /* ---------- CONFETTI ---------- */
+  #confetti{ position:absolute; inset:0; z-index:5; pointer-events:none; overflow:hidden; }
+  .confetti-piece{
+    position:absolute; top:-5%; width:8px; height:14px; opacity:0.95;
+    animation:fall linear forwards;
+  }
+  @keyframes fall{
+    to{ transform:translateY(115vh) rotate(540deg); opacity:0.2; }
+  }
+
+  /* ---------- HUD ---------- */
+  #hud{
+    position:absolute; top:0; left:0; width:100%;
+    z-index:20; display:flex; flex-direction:column; align-items:center;
+    padding:2.2vh 0 0 0; pointer-events:none;
+  }
+  #stageLabel{
+    color:#fff; font-size:clamp(13px,2.4vw,20px); letter-spacing:2px;
+    text-shadow:0 2px 8px rgba(0,0,0,0.8); margin-bottom:1vh; opacity:0.9;
+    text-align:center; padding:0 4vw;
+  }
+  #meterWrap{
+    width:min(78vw,420px); height:22px; border-radius:14px;
+    background:rgba(0,0,0,0.45); border:2px solid rgba(255,255,255,0.25);
+    box-shadow:0 4px 14px rgba(0,0,0,0.5);
+    position:relative; overflow:hidden;
+  }
+  #meterFill{
+    height:100%; width:0%;
+    background:linear-gradient(90deg, var(--accent), var(--accent2));
+    box-shadow:0 0 14px var(--accent);
+    transition:width 0.12s linear;
+    border-radius:14px 0 0 14px;
+  }
+  #meterText{
+    position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+    color:#fff; font-size:11px; letter-spacing:2px; text-shadow:0 1px 3px rgba(0,0,0,0.8);
+  }
+  #punchCount{
+    margin-top:1vh; color:#ffd166; font-size:clamp(11px,1.8vw,15px);
+    letter-spacing:1.5px; text-shadow:0 2px 6px rgba(0,0,0,0.8);
+  }
+  #comboLabel{
+    margin-top:0.6vh; color:#fff; font-size:clamp(11px,1.8vw,15px);
+    letter-spacing:1.5px; text-shadow:0 0 10px var(--accent), 0 2px 6px rgba(0,0,0,0.8);
+    opacity:0.55; transition:opacity 0.2s ease, transform 0.15s ease;
+  }
+  #comboLabel.hot{ opacity:1; transform:scale(1.12); }
+
+  /* ---------- META HUD (lifetime timer + run count) ---------- */
+  #metaHud{
+    position:absolute; top:1.6vh; right:2vw; z-index:21;
+    display:flex; flex-direction:column; align-items:flex-end; gap:2px;
+    font-size:clamp(9px,1.6vw,12px); color:rgba(255,255,255,0.7);
+    letter-spacing:1px; text-shadow:0 1px 3px rgba(0,0,0,0.85);
+    pointer-events:none; transition:opacity 0.5s ease;
+  }
+
+  /* ---------- MECHANIC BAR (gauge / charge) ---------- */
+  #mechBarWrap{
+    margin-top:1vh; display:none; flex-direction:column; align-items:center; gap:4px;
+  }
+  #mechBarLabel{
+    color:#fff; font-size:clamp(10px,1.6vw,13px); letter-spacing:2px;
+    opacity:0.85; text-shadow:0 1px 3px rgba(0,0,0,0.8);
+  }
+  #mechBarTrack{
+    position:relative; width:min(56vw,240px); height:16px; border-radius:10px;
+    background:rgba(0,0,0,0.45); border:2px solid rgba(255,255,255,0.25);
+    overflow:hidden;
+  }
+  #mechBarFill{
+    position:absolute; left:0; bottom:0; width:100%; height:0%;
+    background:linear-gradient(180deg, var(--accent2), var(--accent));
+    box-shadow:0 0 10px var(--accent);
+    transition:height 0.05s linear;
+  }
+  #mechBarSweet{
+    position:absolute; left:0; top:0; width:100%; height:18%;
+    background:rgba(255,255,255,0.4); z-index:2; display:none;
+  }
+
+  /* ---------- BENCH PRESS RIG (Level 2) — flat power-rack style ---------- */
+  #benchStage{
+    position:absolute; left:50%; top:8vh; transform:translateX(-50%);
+    width:min(74vw,440px); height:54vh;
+    display:none; z-index:10; pointer-events:auto;
+  }
+  #benchRackArt{
+    position:absolute; inset:0; z-index:1; pointer-events:none;
+  }
+  #benchRackArt svg{ width:100%; height:100%; display:block; }
+  #benchTargetLine{
+    position:absolute; left:-8%; right:-8%; height:3px; z-index:2;
+    background:repeating-linear-gradient(90deg, var(--accent2) 0 10px, transparent 10px 20px);
+    box-shadow:0 0 12px var(--accent2);
+  }
+  #benchTargetLine::after{
+    content:'LOCK OUT'; position:absolute; left:calc(100% + 8px); top:-8px;
+    font-size:10px; letter-spacing:2px; color:var(--accent2); white-space:nowrap;
+    text-shadow:0 1px 3px rgba(0,0,0,0.7);
+  }
+  #benchBar{
+    position:absolute; left:50%; bottom:10%;
+    transform:translate(-50%,50%);
+    width:min(50vw,300px); height:clamp(20px,5vh,30px);
+    transition:bottom 0.03s linear; cursor:pointer; z-index:3;
+  }
+  #benchBar.drop{ transition:bottom 0.3s cubic-bezier(.5,0,.85,.35); }
+  #benchBar .barShaft{
+    position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
+    width:72%; height:32%;
+    background:#d7d9dd;
+    border-radius:5px; box-shadow:0 2px 0 rgba(0,0,0,0.25);
+  }
+  #benchBar .collar{
+    position:absolute; top:50%; transform:translateY(-50%);
+    width:6%; height:78%;
+    background:#1d2333; border-radius:3px;
+  }
+  #benchBar .collarL{ left:14%; }
+  #benchBar .collarR{ right:14%; }
+  #benchBar .plate{ position:absolute; top:50%; transform:translateY(-50%); border-radius:6px; }
+  #benchBar .plateBigL{ left:6%; width:8%; height:175%; background:#05434d; }
+  #benchBar .plateBigR{ right:6%; width:8%; height:175%; background:#05434d; }
+  #benchBar .plateSmallL{ left:-2%; width:6%; height:125%; background:#e97863; }
+  #benchBar .plateSmallR{ right:-2%; width:6%; height:125%; background:#e97863; }
+  #benchBar .hand{
+    position:absolute; top:50%; transform:translateY(-30%);
+    width:clamp(16px,4.4vw,26px); height:clamp(20px,5.4vw,32px);
+    border-radius:50% 50% 40% 40%;
+    background:radial-gradient(ellipse at 35% 25%, #f2c9a0, #b97a4a 75%);
+    box-shadow:0 2px 6px rgba(0,0,0,0.4);
+    z-index:4;
+  }
+  #benchBar .handL{ left:26%; }
+  #benchBar .handR{ right:26%; }
+  #benchBar.tap{ animation:benchTap 0.12s ease-out; }
+  @keyframes benchTap{
+    0%{ transform:translate(-50%,50%) scale(1) rotate(0deg); }
+    50%{ transform:translate(-50%,50%) scale(1.04) rotate(-1deg); }
+    100%{ transform:translate(-50%,50%) scale(1) rotate(0deg); }
+  }
+  #benchBar.rep{ animation:benchRep 0.4s ease-out; }
+  @keyframes benchRep{
+    0%{ filter:brightness(1); }
+    30%{ filter:brightness(1.9) drop-shadow(0 0 16px var(--accent2)); }
+    100%{ filter:brightness(1); }
+  }
+
+  /* ---------- SMASH THE BOXER (Level 3) — whack-a-mole ---------- */
+  #smashStage{
+    position:absolute; left:0; right:0; bottom:0; width:100%; height:82vh;
+    display:none; z-index:10; pointer-events:auto;
+    align-items:flex-end; justify-content:space-evenly;
+    padding:0 1vw;
+  }
+  .smashHole{
+    position:relative; width:min(11.5vw,150px); height:62vh;
+    flex:0 0 auto; display:flex; align-items:flex-end; justify-content:center;
+    overflow:hidden;
+  }
+  .holeRim{
+    position:absolute; left:50%; bottom:0; transform:translateX(-50%);
+    width:112%; height:14%;
+    background:radial-gradient(ellipse at center, #05050a 0%, #1a0f2a 70%, transparent 100%);
+    border-radius:50%;
+    box-shadow:0 6px 20px rgba(0,0,0,0.65) inset;
+    z-index:3;
+  }
+  .cutout{
+    position:absolute; left:50%; bottom:0; transform:translate(-50%, 82%);
+    width:88%; height:92%;
+    transition:transform 0.16s cubic-bezier(.3,0,.6,1);
+    z-index:2; cursor:pointer;
+  }
+  .cutout.up{ transform:translate(-50%, 0%); }
+  .cutout .cutBody{
+    position:absolute; left:50%; bottom:0; transform:translateX(-50%);
+    width:74%; height:78%;
+    background:linear-gradient(180deg, #c98b4a, #8a5a28 85%);
+    border-radius:20px 20px 8px 8px;
+    box-shadow:0 4px 0 rgba(0,0,0,0.3);
+  }
+  .cutout .cutHead{
+    position:absolute; left:50%; top:0; transform:translate(-50%,-58%);
+    width:58%; height:44%;
+    background:radial-gradient(ellipse at 35% 30%, #e6b57a, #a06a34 75%);
+    border-radius:50% 50% 44% 44%;
+  }
+  .cutout .cutGlove{
+    position:absolute; bottom:34%; width:32%; height:27%;
+    border-radius:50%;
+    background:radial-gradient(ellipse at 35% 28%, #ff9d8a, #c73c3c 70%);
+    box-shadow:0 3px 7px rgba(0,0,0,0.4);
+  }
+  .cutout .cutGlove.l{ left:-10%; }
+  .cutout .cutGlove.r{ right:-10%; }
+  .cutout.hit .cutBody, .cutout.hit .cutHead, .cutout.hit .cutGlove{
+    animation:cutHitAnim 0.2s ease-out;
+  }
+  @keyframes cutHitAnim{
+    0%{ filter:brightness(1) drop-shadow(0 0 0 transparent); }
+    30%{ filter:brightness(3.2) saturate(1.8) drop-shadow(0 0 22px #fff); }
+    100%{ filter:brightness(1) drop-shadow(0 0 0 transparent); }
+  }
+  .cutout.hit{ animation:cutJolt 0.2s ease-out; }
+  @keyframes cutJolt{
+    0%{ transform:translate(-50%,0%) scale(1); }
+    25%{ transform:translate(-50%,4%) scale(0.94,1.08); }
+    55%{ transform:translate(-50%,-2%) scale(1.05,0.96); }
+    100%{ transform:translate(-50%,0%) scale(1); }
+  }
+  .cutout.break{ animation:cutBreakAnim 0.3s ease-out forwards; }
+  @keyframes cutBreakAnim{
+    0%{ transform:translate(-50%,0%) scale(1) rotate(0deg); opacity:1; }
+    100%{ transform:translate(-50%,10%) scale(1.3) rotate(14deg); opacity:0; }
+  }
+
+  /* ---------- SMASH HIT BURST (impact flash on click) ---------- */
+  .hitRing{
+    position:absolute; width:14px; height:14px; border-radius:50%;
+    border:5px solid #fff; transform:translate(-50%,-50%) scale(0.3);
+    opacity:0.95; pointer-events:none;
+    animation:hitRingAnim 0.3s ease-out forwards;
+  }
+  @keyframes hitRingAnim{
+    0%{ transform:translate(-50%,-50%) scale(0.3); opacity:1; }
+    100%{ transform:translate(-50%,-50%) scale(3.2); opacity:0; }
+  }
+
+  /* ---------- CUSTOM CURSOR (Level 1 blue boxing glove) ---------- */
+  body.custom-cursor-active{ cursor:none; }
+  body.custom-cursor-active #bag{ cursor:none; }
+  #customCursor{
+    position:fixed; top:0; left:0;
+    width:min(15vw,86px); height:min(15vw,86px);
+    --rot:-18deg; --scale:1;
+    transform:translate(-50%,-50%) rotate(var(--rot)) scale(var(--scale));
+    transition:transform 0.09s linear;
+    pointer-events:none; z-index:9999; display:none;
+  }
+  #customCursor.active{ display:block; }
+  #customCursor .glove-shape{
+    position:absolute; inset:0;
+    border-radius:50% 50% 42% 42%;
+    background:radial-gradient(ellipse at 32% 28%, #bfe4ff, #1361c9 55%, #063a80 100%);
+    box-shadow:0 0 16px rgba(60,150,255,0.65), inset -8px 0 14px rgba(0,0,0,0.35), inset 6px 4px 10px rgba(255,255,255,0.25);
+  }
+  #customCursor .glove-thumb{
+    position:absolute; left:-14%; top:32%; width:32%; height:34%;
+    border-radius:50%;
+    background:radial-gradient(ellipse at 40% 30%, #bfe4ff, #1361c9 60%, #063a80 100%);
+    box-shadow:inset -4px 0 8px rgba(0,0,0,0.3);
+  }
+  #customCursor .glove-cuff{
+    position:absolute; left:50%; bottom:-16%; transform:translateX(-50%);
+    width:56%; height:32%;
+    background:linear-gradient(180deg, #0a4a95, #052750);
+    border-radius:0 0 8px 8px;
+    box-shadow:0 4px 8px rgba(0,0,0,0.4);
+  }
+  #customCursor.press{ --scale:0.82; }
+  #customCursor.punch{ animation:cursorPunchAnim 0.22s ease-out; }
+  @keyframes cursorPunchAnim{
+    0%{ transform:translate(-50%,-50%) rotate(var(--rot)) scale(1); }
+    35%{ transform:translate(-50%,-50%) rotate(var(--rot)) scale(1.4); }
+    100%{ transform:translate(-50%,-50%) rotate(var(--rot)) scale(1); }
+  }
+
+  /* ---------- SKIP LEVEL BUTTON ---------- */
+  #skipBtn{
+    position:absolute; top:1.6vh; left:2vw; z-index:21;
+    padding:6px 14px; border-radius:20px; border:1px solid rgba(255,255,255,0.35);
+    background:rgba(0,0,0,0.35); color:rgba(255,255,255,0.75);
+    font-size:clamp(9px,1.6vw,12px); letter-spacing:1px; cursor:pointer;
+    transition:opacity 0.25s ease, background 0.2s ease;
+  }
+  #skipBtn:active{ background:rgba(255,255,255,0.15); }
+  #skipBtn.hide{ opacity:0; pointer-events:none; }
+
+  /* ---------- EVOLVE / UPGRADE BUTTON ---------- */
+  #evolveBtn{
+    position:absolute; top:52%; left:50%; transform:translate(-50%,-50%) scale(0.6);
+    z-index:30; padding:16px 30px; border-radius:40px; border:3px solid #fff;
+    background:linear-gradient(135deg, var(--accent), var(--accent2));
+    color:#1a0a0a; font-size:clamp(14px,2.6vw,22px); letter-spacing:2px;
+    cursor:pointer; opacity:0; pointer-events:none;
+    box-shadow:0 0 30px var(--accent), 0 0 60px rgba(255,255,255,0.4);
+    transition:opacity 0.35s ease, transform 0.35s cubic-bezier(.34,1.56,.64,1);
+    animation:pulseBtn 1.1s ease-in-out infinite;
+  }
+  #evolveBtn.show{ opacity:1; transform:translate(-50%,-50%) scale(1); pointer-events:auto; }
+  @keyframes pulseBtn{
+    0%,100%{ box-shadow:0 0 20px var(--accent), 0 0 40px rgba(255,255,255,0.25); }
+    50%{ box-shadow:0 0 40px var(--accent), 0 0 80px rgba(255,255,255,0.5); }
+  }
+
+  /* ---------- RIG / PENDULUM ---------- */
+  #rig{
+    position:absolute; top:8vh; left:50%; width:0; height:0; z-index:10;
+  }
+  #anchorPlate{
+    position:absolute; left:-14px; top:-8px; width:28px; height:16px;
+    background:#2b2b2b; border-radius:4px; box-shadow:0 3px 6px rgba(0,0,0,0.6);
+  }
+  #pivotCenter{
+    position:absolute; left:0; top:0;
+    transform:translateX(-50%);
+  }
+  #pendulum{
+    transform-origin:top center;
+    display:flex; flex-direction:column; align-items:center;
+  }
+  #chain{
+    width:6px; height:9vh; background:repeating-linear-gradient(180deg,#8a8a8a 0 6px, #4b4b4b 6px 12px);
+    border-radius:3px; box-shadow:0 0 4px rgba(0,0,0,0.5);
+  }
+  #bag{
+    position:relative; width:min(20vw,150px); height:min(38vh,320px);
+    margin-top:-2px;
+    background:radial-gradient(ellipse at 35% 20%, #8a3a3a, #4a1414 70%);
+    border-radius:38% 38% 46% 46% / 22% 22% 30% 30%;
+    box-shadow:inset -14px 0 30px rgba(0,0,0,0.5), inset 10px 0 20px rgba(255,255,255,0.06), 0 12px 24px rgba(0,0,0,0.55);
+    cursor:pointer;
+    transition:transform 0.08s ease-out;
+  }
+  #bag.squish{ transform:scaleX(0.9) scaleY(1.05); }
+  #bag::before{
+    content:''; position:absolute; top:-4px; left:50%; transform:translateX(-50%);
+    width:34%; height:14px; background:#2a2a2a; border-radius:6px;
+  }
+  .bag-band{
+    position:absolute; left:0; width:100%; height:9%;
+    background:rgba(20,20,20,0.55);
+    box-shadow:0 1px 3px rgba(255,255,255,0.08) inset;
+  }
+  .band1{ top:18%; } .band2{ top:48%; } .band3{ top:76%; }
+  #bagLabel{
+    position:absolute; top:58%; left:50%; transform:translate(-50%,-50%) rotate(-4deg);
+    color:rgba(255,255,255,0.75); font-size:clamp(9px,1.3vw,13px); letter-spacing:2px;
+    text-align:center; width:80%; pointer-events:none;
+    text-shadow:0 1px 3px rgba(0,0,0,0.6);
+  }
+
+  /* ---------- WEAK POINT (hunter mechanic) ---------- */
+  #weakPoint{
+    position:absolute; width:16%; height:10%; border-radius:50%;
+    background:radial-gradient(circle, rgba(255,255,255,0.95), var(--accent) 60%, transparent 100%);
+    box-shadow:0 0 18px var(--accent), 0 0 34px var(--accent2);
+    transform:translate(-50%,-50%);
+    display:none; z-index:2; pointer-events:none;
+    animation:weakPulse 0.9s ease-in-out infinite;
+  }
+  @keyframes weakPulse{
+    0%,100%{ opacity:0.65; transform:translate(-50%,-50%) scale(0.85); }
+    50%{ opacity:1; transform:translate(-50%,-50%) scale(1.15); }
+  }
+
+  /* ---------- POPUP TEXT ---------- */
+  #popupLayer{ position:absolute; inset:0; z-index:25; pointer-events:none; overflow:hidden; }
+  .popup-text{
+    position:absolute; font-size:clamp(14px,2.6vw,26px); font-weight:900;
+    color:#fff; letter-spacing:1px; white-space:nowrap;
+    text-shadow:0 0 10px var(--accent), 0 2px 4px rgba(0,0,0,0.8);
+    animation:popFloat 1.15s ease-out forwards;
+  }
+  @keyframes popFloat{
+    0%{ transform:translate(-50%,-50%) scale(0.3) rotate(-6deg); opacity:0; }
+    18%{ transform:translate(-50%,-70%) scale(1.15) rotate(2deg); opacity:1; }
+    100%{ transform:translate(-50%,-160%) scale(1) rotate(-2deg); opacity:0; }
+  }
+  .impact-burst{
+    position:absolute; width:10px; height:10px; border-radius:50%;
+    background:#fff; opacity:0.9;
+    animation:burst 0.4s ease-out forwards;
+  }
+  @keyframes burst{
+    0%{ transform:translate(-50%,-50%) scale(0.4); opacity:1; }
+    100%{ transform:translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(0.1); opacity:0; }
+  }
+
+  /* ---------- SHAKE ---------- */
+  .shake{ animation:shakeAnim 0.18s linear; }
+  @keyframes shakeAnim{
+    0%,100%{ transform:translate(0,0); }
+    25%{ transform:translate(-4px,2px); }
+    50%{ transform:translate(4px,-2px); }
+    75%{ transform:translate(-3px,-1px); }
+  }
+
+  /* ---------- INTRO OVERLAY ---------- */
+  #introOverlay{
+    position:absolute; inset:0; z-index:100; background:rgba(3,1,6,0.92);
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    text-align:center; color:#fff; padding:0 6vw;
+  }
+  #introOverlay h1{
+    font-size:clamp(28px,7vw,56px); margin:0 0 10px; letter-spacing:3px;
+    color:#fff; text-shadow:0 0 20px var(--accent);
+  }
+  #introOverlay p{
+    font-size:clamp(13px,2.4vw,17px); color:#d9c9c9; max-width:560px; line-height:1.6;
+    letter-spacing:0.5px; margin:0 0 24px;
+  }
+  #startBtn{
+    padding:14px 36px; border-radius:40px; border:3px solid #fff; cursor:pointer;
+    background:linear-gradient(135deg, var(--accent), var(--accent2));
+    color:#1a0a0a; font-size:clamp(15px,2.6vw,20px); letter-spacing:3px; font-weight:900;
+    box-shadow:0 0 30px var(--accent);
+  }
+  #startBtn:active{ transform:scale(0.96); }
+
+  #celebrateFlash{
+    position:absolute; inset:0; z-index:90; background:#fff; opacity:0;
+    pointer-events:none;
+  }
+  #celebrateFlash.go{ animation:flashAnim 0.5s ease-out; }
+  @keyframes flashAnim{ 0%{opacity:0.85;} 100%{opacity:0;} }
+
+  #finaleOverlay{
+    position:absolute; inset:0; z-index:150;
+    display:flex; align-items:center; justify-content:center;
+    background:radial-gradient(ellipse at center, rgba(10,4,6,0.65) 0%, rgba(5,2,4,0.92) 100%);
+    opacity:0; pointer-events:none;
+    transition:opacity 1s ease;
+  }
+  #finaleOverlay.show{ opacity:1; }
+  #finaleOverlay h1{
+    margin:0; text-align:center; color:#fff;
+    font-size:clamp(26px,7vw,58px); letter-spacing:3px;
+    text-shadow:0 0 30px var(--accent), 0 0 70px var(--accent2), 0 4px 10px rgba(0,0,0,0.8);
+    transform:scale(0.7);
+    transition:transform 1.1s cubic-bezier(.2,1.6,.4,1);
+  }
+  #finaleOverlay.show h1{ transform:scale(1); }
+  #finaleOverlay h1 span{
+    display:block; margin-top:0.35em; font-size:1.15em;
+    color:var(--accent2);
+  }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <div id="bgLayerA" class="bg-layer active"></div>
+  <div id="bgLayerB" class="bg-layer"></div>
+  <div class="spotlight l"></div>
+  <div class="spotlight r"></div>
+
+  <div id="crowd"></div>
+  <div id="crowdFront"></div>
+
+  <div id="ringFloor"></div>
+  <div id="ringMat"></div>
+  <div class="ring-post left"></div>
+  <div class="ring-post right"></div>
+  <div class="rope" style="bottom:10vh;"></div>
+  <div class="rope" style="bottom:16vh;"></div>
+  <div class="rope" style="bottom:22vh;"></div>
+
+  <div id="confetti"></div>
+
+  <div id="hud">
+    <div id="stageLabel">UPGRADE 1 · MOBILE-FIRST</div>
+    <div id="meterWrap">
+      <div id="meterFill"></div>
+      <div id="meterText">TRAINING PROGRESS</div>
+    </div>
+    <div id="punchCount">UPDATES TRAINED: 0</div>
+    <div id="comboLabel">MOMENTUM x1.0</div>
+    <div id="mechBarWrap">
+      <div id="mechBarLabel">TIMING</div>
+      <div id="mechBarTrack">
+        <div id="mechBarSweet"></div>
+        <div id="mechBarFill"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="metaHud">
+    <span id="metaTime">TIME 00:00:00</span>
+    <span id="metaRuns">RUNS 0</span>
+  </div>
+
+  <div id="benchStage">
+    <div id="benchRackArt">
+      <svg viewBox="0 0 340.2 275.9" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+        <rect fill="#d7d9dd" y="49.4" width="340.2" height="10.3"/>
+        <rect fill="#1d2333" x="71.8" y="25.8" width="6" height="250.2"/>
+        <path fill="#1d2333" d="M84.5,65c0,2-1.5,3.7-3.4,3.7h-12.6c-1.9,0-3.4-1.7-3.4-3.7h0c0-2,1.5-3.7,3.4-3.7h12.6c1.9,0,3.4,1.7,3.4,3.7h0Z"/>
+        <rect fill="#1d2333" x="262.5" y="25.8" width="6" height="250.2"/>
+        <path fill="#1d2333" d="M275.2,65c0,2-1.5,3.7-3.4,3.7h-12.6c-1.9,0-3.4-1.7-3.4-3.7h0c0-2,1.5-3.7,3.4-3.7h12.6c1.9,0,3.4,1.7,3.4,3.7h0Z"/>
+        <rect fill="#1d2333" x="61" y="250.1" width="218.2" height="16.2"/>
+        <rect fill="#1d2333" x="120.7" y="259.7" width="98.9" height="16.2"/>
+      </svg>
+    </div>
+    <div id="benchTargetLine"></div>
+    <div id="benchBar">
+      <div class="plate plateBigL"></div>
+      <div class="plate plateSmallL"></div>
+      <div class="collar collarL"></div>
+      <div class="barShaft"></div>
+      <div class="collar collarR"></div>
+      <div class="plate plateBigR"></div>
+      <div class="plate plateSmallR"></div>
+      <div class="hand handL"></div>
+      <div class="hand handR"></div>
+    </div>
+  </div>
+
+  <div id="smashStage"></div>
+
+  <button id="skipBtn">SKIP LEVEL ⏭</button>
+  <button id="evolveBtn">⚡ ADD UPGRADE! ⚡</button>
+
+  <div id="customCursor">
+    <div class="glove-cuff"></div>
+    <div class="glove-shape"></div>
+    <div class="glove-thumb"></div>
+  </div>
+
+  <div id="rig">
+    <div id="anchorPlate"></div>
+    <div id="pivotCenter">
+      <div id="pendulum">
+        <div id="chain"></div>
+        <div id="bag">
+          <div class="bag-band band1"></div>
+          <div class="bag-band band2"></div>
+          <div class="bag-band band3"></div>
+          <div id="bagLabel">NETBANKING 1.0</div>
+          <div id="weakPoint"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="popupLayer"></div>
+  <div id="celebrateFlash"></div>
+
+  <div id="finaleOverlay">
+    <h1>THE NEW PAYMENT CHAMPION<span>NETBANKING 2.0</span></h1>
+  </div>
+
+  <div id="introOverlay">
+    <h1>TRAIN THE UPGRADE</h1>
+    <p>This legacy netbanking system needs training across 5 rounds of new tech updates.<br>
+    Each round is a different challenge — swings, reps, smashes, precision and power.<br>
+    Fill the Training Progress bar each round and hit Add Upgrade to move on. Clear all 5 to crown the new payment champion.</p>
+    <button id="startBtn">START TRAINING</button>
+  </div>
+
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  // ---------------- LEVEL CONFIG ----------------
+  // Each level = one mini-game mechanic, themed around one netbanking upgrade.
+  // The bag itself is always "NETBANKING 1.0" (the legacy system being trained);
+  // the arena/background upgrades visually as the player clears each round.
+  var LEVELS = [
+    { mechanic:"swing",  text:"MOBILE-FIRST",         name:"UPGRADE 1 · MOBILE-FIRST",
+      accent:"#facc15", accent2:"#ff5252",
+      bg:"radial-gradient(ellipse at 50% 10%, #3a1a1a 0%, #2a0f18 40%, #0a0508 100%)",
+      matColor:"#7a1f2b", postColor:"#f3d16b", ropeColor:"#ffd166",
+      crowdCount:100, crowdColor:[255,215,120], crowdOpacity:0.75,
+      impulseBase:0.96, damping:0.982, decayRate:55, meterGain:6,
+      slideAmpFactor:0.95, slideFreq:0.82, confetti:true },
+
+    { mechanic:"benchpress", text:"ZERO LATENCY",     name:"UPGRADE 2 · ZERO LATENCY",
+      accent:"#ff9d5c", accent2:"#ffe45c",
+      bg:"radial-gradient(ellipse at 50% 10%, #3a2410 0%, #2a1a0f 40%, #0a0705 100%)",
+      matColor:"#5a3a1f", postColor:"#ffd98b", ropeColor:"#ffe45c",
+      crowdCount:105, crowdColor:[255,210,140], crowdOpacity:0.75,
+      impulseBase:1.02, damping:0.982, decayRate:60, meterGain:13,
+      slideAmpFactor:0, slideFreq:0, confetti:true,
+      benchGravity:2.7, benchDamping:0.965, benchKick:0.52, benchMaxVelocity:2.6,
+      benchContinuityMs:150, benchIdleGravityMult:3,
+      benchThreshold:0.9, benchMaxCap:1.05 },
+
+    { mechanic:"smash",  text:"ONE-CLICK KYC",        name:"UPGRADE 3 · ONE-CLICK KYC",
+      accent:"#c792ff", accent2:"#5cffe0",
+      bg:"radial-gradient(ellipse at 50% 10%, #2a1a3a 0%, #1a0f2a 40%, #05050a 100%)",
+      matColor:"#3a1f5a", postColor:"#d8b8ff", ropeColor:"#5cffe0",
+      crowdCount:105, crowdColor:[210,170,255], crowdOpacity:0.75,
+      impulseBase:1.0, damping:0.982, decayRate:0, meterGain:10,
+      slideAmpFactor:0, slideFreq:0, confetti:true,
+      smashHitsToBreak:10, smashBreaksToWin:10,
+      smashMinUpMs:1100, smashMaxUpMs:1900,
+      smashMinCooldownMs:250, smashMaxCooldownMs:700 },
+
+    { mechanic:"hunter", text:"REAL-TIME SETTLEMENT", name:"UPGRADE 4 · REAL-TIME SETTLEMENT",
+      accent:"#5cff8f", accent2:"#ffd15c",
+      bg:"radial-gradient(ellipse at 50% 10%, #103a1c 0%, #0f2a17 40%, #050a07 100%)",
+      matColor:"#1f5a30", postColor:"#bdf5c9", ropeColor:"#ffd15c",
+      crowdCount:105, crowdColor:[160,230,180], crowdOpacity:0.75,
+      impulseBase:1.02, damping:0.982, decayRate:55, meterGain:5,
+      slideAmpFactor:0.95, slideFreq:0.88, confetti:true,
+      relocMinMs:1200, relocMaxMs:1800, hitRadiusFrac:0.3 },
+
+    { mechanic:"charge", text:"SEAMLESS UPI",         name:"UPGRADE 5 · SEAMLESS UPI",
+      accent:"#ff5c8a", accent2:"#5cc8ff",
+      bg:"radial-gradient(ellipse at 50% 10%, #3a1030 0%, #2a0f22 40%, #0a0508 100%)",
+      matColor:"#5a1f45", postColor:"#ffb8dd", ropeColor:"#5cc8ff",
+      crowdCount:110, crowdColor:[255,170,210], crowdOpacity:0.78,
+      impulseBase:1.05, damping:0.982, decayRate:55, meterGain:4,
+      slideAmpFactor:0.95, slideFreq:0.9, confetti:true,
+      maxHoldMs:1100 }
+  ];
+
+  // ---------------- STATE ----------------
+  var levelIndex = 0;
+  var theta = 0, omega = 0;
+  var lastTime = null;
+  var lastHitTime = 0;
+  var meter = 0;
+  var meterLocked = false;
+  var interactionLocked = false;
+  var punches = 0;
+  var running = false;
+  var comboStreak = 0;
+  var lastClickX = null, lastClickY = null;
+  var gameEnded = false;
+  var activeLayer = "A";
+
+  // mechanic-specific runtime state
+  var benchProgress = 0, benchVelocity = 0, benchPhase = "press", benchReps = 0;
+  var lastBenchClickMs = 0;
+  var BENCH_MIN_PCT = 10, BENCH_SPAN_PCT = 62;
+  var smashHoles = [], smashActiveIdx = -1, smashSpawnTimer = null, smashBrokenCount = 0;
+  var weakPoint = { xFrac:0, yFrac:0.5 };
+  var lastRelocate = 0, nextRelocateIn = 1500;
+  var charging = false, chargeStart = 0;
+  var cursorRot = -18, cursorLastX = null;
+
+  // persisted meta stats
+  var totalTimeMs = 0, totalRuns = 0;
+
+  // ---------------- DOM ----------------
+  var pendulum = document.getElementById("pendulum");
+  var bag = document.getElementById("bag");
+  var rig = document.getElementById("rig");
+  var meterFill = document.getElementById("meterFill");
+  var stageLabel = document.getElementById("stageLabel");
+  var punchCountEl = document.getElementById("punchCount");
+  var comboLabelEl = document.getElementById("comboLabel");
+  var evolveBtn = document.getElementById("evolveBtn");
+  var skipBtn = document.getElementById("skipBtn");
+  var customCursor = document.getElementById("customCursor");
+  var popupLayer = document.getElementById("popupLayer");
+  var bgA = document.getElementById("bgLayerA");
+  var bgB = document.getElementById("bgLayerB");
+  var crowd = document.getElementById("crowd");
+  var crowdFront = document.getElementById("crowdFront");
+  var confettiLayer = document.getElementById("confetti");
+  var app = document.getElementById("app");
+  var celebrateFlash = document.getElementById("celebrateFlash");
+  var introOverlay = document.getElementById("introOverlay");
+  var startBtn = document.getElementById("startBtn");
+  var hud = document.getElementById("hud");
+  var finaleOverlay = document.getElementById("finaleOverlay");
+  var metaHud = document.getElementById("metaHud");
+  var metaTimeEl = document.getElementById("metaTime");
+  var metaRunsEl = document.getElementById("metaRuns");
+  var benchStage = document.getElementById("benchStage");
+  var benchBar = document.getElementById("benchBar");
+  var benchTargetLine = document.getElementById("benchTargetLine");
+  var weakPointEl = document.getElementById("weakPoint");
+  var mechBarWrap = document.getElementById("mechBarWrap");
+  var mechBarLabel = document.getElementById("mechBarLabel");
+  var mechBarFill = document.getElementById("mechBarFill");
+  var mechBarSweet = document.getElementById("mechBarSweet");
+  var smashStage = document.getElementById("smashStage");
+
+  var root = document.documentElement;
+
+  function cfg(){ return LEVELS[levelIndex]; }
+
+  // ---------------- BACKGROUND / LEVEL VISUALS ----------------
+  function applyStageVisuals(instant){
+    var c = cfg();
+    root.style.setProperty("--accent", c.accent);
+    root.style.setProperty("--accent2", c.accent2);
+    document.documentElement.style.setProperty("--mat-color", c.matColor);
+    document.documentElement.style.setProperty("--post-color", c.postColor);
+    document.documentElement.style.setProperty("--rope-color", c.ropeColor);
+    document.getElementById("ringMat").style.setProperty("--mat-color", c.matColor);
+    document.querySelectorAll(".ring-post").forEach(function(p){ p.style.setProperty("--post-color", c.postColor); });
+    document.querySelectorAll(".rope").forEach(function(r){ r.style.setProperty("--rope-color", c.ropeColor); });
+
+    stageLabel.textContent = c.name;
+
+    var nextLayer = activeLayer === "A" ? bgB : bgA;
+    var currLayer = activeLayer === "A" ? bgA : bgB;
+    nextLayer.style.background = c.bg;
+    if(instant){
+      currLayer.classList.remove("active");
+      nextLayer.classList.add("active");
+    } else {
+      requestAnimationFrame(function(){
+        nextLayer.classList.add("active");
+        setTimeout(function(){ currLayer.classList.remove("active"); }, 1150);
+      });
+    }
+    activeLayer = activeLayer === "A" ? "B" : "A";
+
+    regenerateCrowd(c);
+  }
+
+  function regenerateCrowd(c){
+    crowd.innerHTML = "";
+    crowdFront.innerHTML = "";
+    var rgb = c.crowdColor;
+    for(var i=0;i<c.crowdCount;i++){
+      var d = document.createElement("div");
+      d.className = "crowd-dot";
+      var size = 8 + Math.random()*14;
+      var left = Math.random()*100;
+      var top = Math.random()*70;
+      var lightness = 0.6 + Math.random()*0.4;
+      d.style.width = size+"px";
+      d.style.height = (size*1.15)+"px";
+      d.style.left = left+"%";
+      d.style.top = top+"%";
+      d.style.background = "rgba("+Math.round(rgb[0]*lightness)+","+Math.round(rgb[1]*lightness)+","+Math.round(rgb[2]*lightness)+","+c.crowdOpacity+")";
+      d.style.animationDuration = (0.6+Math.random()*0.9)+"s";
+      d.style.animationDelay = (Math.random()*1.2)+"s";
+      crowd.appendChild(d);
+    }
+    var frontCount = Math.round(c.crowdCount*0.3);
+    for(var j=0;j<frontCount;j++){
+      var f = document.createElement("div");
+      f.className = "crowd-dot";
+      var fsize = 16+Math.random()*16;
+      f.style.width = fsize+"px";
+      f.style.height = (fsize*1.15)+"px";
+      f.style.left = (Math.random()*100)+"%";
+      f.style.top = (Math.random()*60)+"%";
+      f.style.background = "rgba("+rgb[0]+","+rgb[1]+","+rgb[2]+","+(c.crowdOpacity*0.6)+")";
+      f.style.animationDuration = (0.6+Math.random()*0.9)+"s";
+      f.style.animationDelay = (Math.random()*1.2)+"s";
+      crowdFront.appendChild(f);
+    }
+  }
+
+  var confettiTimer = null;
+  function startConfetti(){
+    if(confettiTimer) return;
+    confettiTimer = setInterval(function(){
+      spawnConfettiPiece();
+    }, 150);
+  }
+  function spawnConfettiPiece(){
+    var p = document.createElement("div");
+    p.className = "confetti-piece";
+    var hue = Math.floor(Math.random()*360);
+    p.style.left = (Math.random()*100)+"%";
+    p.style.background = "hsl("+hue+",90%,60%)";
+    p.style.animationDuration = (2.2+Math.random()*1.8)+"s";
+    confettiLayer.appendChild(p);
+    setTimeout(function(){ p.remove(); }, 4200);
+  }
+
+  function burstConfetti(count){
+    for(var i=0;i<count;i++){
+      setTimeout(spawnConfettiPiece, i*20);
+    }
+  }
+
+  // ---------------- MECHANIC UI VISIBILITY ----------------
+  function applyMechanicUI(mech){
+    weakPointEl.style.display = mech === "hunter" ? "block" : "none";
+    var showBar = (mech === "charge");
+    mechBarWrap.style.display = showBar ? "flex" : "none";
+    mechBarSweet.style.display = "none";
+    mechBarLabel.textContent = mech === "charge" ? "HOLD POWER" : "";
+
+    var isBench = mech === "benchpress";
+    benchStage.style.display = isBench ? "flex" : "none";
+
+    var isSmash = mech === "smash";
+    smashStage.style.display = isSmash ? "flex" : "none";
+
+    rig.style.visibility = (isBench || isSmash) ? "hidden" : "visible";
+
+    if(isBench){
+      comboLabelEl.textContent = "REPS: 0";
+      comboLabelEl.classList.remove("hot");
+    } else if(isSmash){
+      comboLabelEl.textContent = "SMASHED: 0/" + (cfg().smashBreaksToWin||10);
+      comboLabelEl.classList.remove("hot");
+    } else {
+      comboLabelEl.textContent = "MOMENTUM x1.0";
+      comboLabelEl.classList.remove("hot");
+    }
+
+    if(isSmash){ startSmashMechanic(); } else { stopSmashMechanic(); }
+
+    setCustomCursorActive(mech === "swing" && running && !gameEnded);
+  }
+
+  // ---------------- CUSTOM CURSOR (Level 1 blue boxing glove) ----------------
+  function setCustomCursorActive(active){
+    if(active){
+      customCursor.classList.add("active");
+      document.body.classList.add("custom-cursor-active");
+    } else {
+      customCursor.classList.remove("active");
+      document.body.classList.remove("custom-cursor-active");
+      cursorLastX = null;
+    }
+  }
+
+  function onCursorMove(e){
+    if(!customCursor.classList.contains("active")) return;
+    var point = (e.touches && e.touches[0]) ? e.touches[0] : e;
+    if(!point || typeof point.clientX !== "number") return;
+    customCursor.style.left = point.clientX + "px";
+    customCursor.style.top = point.clientY + "px";
+    // tilt the glove based on swing direction/speed, easing back to neutral
+    if(cursorLastX !== null){
+      var dx = point.clientX - cursorLastX;
+      var targetRot = -18 + Math.max(-34, Math.min(34, dx*1.6));
+      cursorRot += (targetRot - cursorRot) * 0.4;
+      customCursor.style.setProperty("--rot", cursorRot + "deg");
+    }
+    cursorLastX = point.clientX;
+  }
+  window.addEventListener("pointermove", onCursorMove);
+  window.addEventListener("touchmove", onCursorMove, { passive:true });
+
+  function cursorPunchPulse(){
+    if(!customCursor.classList.contains("active")) return;
+    customCursor.classList.remove("punch");
+    void customCursor.offsetWidth;
+    customCursor.classList.add("punch");
+  }
+
+  window.addEventListener("pointerdown", function(){
+    if(customCursor.classList.contains("active")) customCursor.classList.add("press");
+  });
+  window.addEventListener("pointerup", function(){ customCursor.classList.remove("press"); });
+  window.addEventListener("pointercancel", function(){ customCursor.classList.remove("press"); });
+
+  function resetMechanicState(){
+    var c = cfg();
+    var now = performance.now();
+    weakPoint.xFrac = (Math.random()*1.2 - 0.6);
+    weakPoint.yFrac = 0.28 + Math.random()*0.44;
+    positionWeakPointEl();
+    lastRelocate = now;
+    nextRelocateIn = (c.relocMinMs||1200) + Math.random()*((c.relocMaxMs||1800)-(c.relocMinMs||1200));
+    charging = false; chargeStart = 0;
+    mechBarFill.style.height = "0%";
+    benchProgress = 0; benchVelocity = 0; benchPhase = "press"; benchReps = 0;
+    lastBenchClickMs = now;
+    smashBrokenCount = 0;
+    benchBar.classList.remove("drop");
+    benchTargetLine.style.bottom = (BENCH_MIN_PCT + (c.benchThreshold||0.9)*BENCH_SPAN_PCT) + "%";
+    updateBenchVisual();
+    applyMechanicUI(c.mechanic);
+  }
+
+  function positionWeakPointEl(){
+    weakPointEl.style.left = ((weakPoint.xFrac + 1) / 2 * 100) + "%";
+    weakPointEl.style.top = (weakPoint.yFrac * 100) + "%";
+  }
+
+  function relocateWeakPoint(){
+    weakPoint.xFrac = (Math.random()*1.2 - 0.6);
+    weakPoint.yFrac = 0.28 + Math.random()*0.44;
+    positionWeakPointEl();
+    lastRelocate = performance.now();
+    var c = cfg();
+    nextRelocateIn = (c.relocMinMs||1200) + Math.random()*((c.relocMaxMs||1800)-(c.relocMinMs||1200));
+  }
+
+  function updateBenchPress(now, dt, c){
+    if(benchPhase !== "press") return;
+
+    var gravity = c.benchGravity || 1.5;
+    var contMs = c.benchContinuityMs || 150;
+    if(now - lastBenchClickMs > contMs){
+      // any break in continuous clicking makes the bar sink faster —
+      // ramps up the further/longer the click stream has lapsed
+      var overMs = (now - lastBenchClickMs) - contMs;
+      var rampMult = 1 + Math.min(1, overMs/300) * ((c.benchIdleGravityMult||1) - 1);
+      gravity *= rampMult;
+    }
+    var dampFactor = Math.pow(c.benchDamping || 0.965, dt*60);
+    benchVelocity -= gravity*dt;
+    benchVelocity *= dampFactor;
+    benchProgress += benchVelocity*dt;
+
+    if(benchProgress < 0){ benchProgress = 0; benchVelocity = Math.max(0, benchVelocity*-0.2); }
+    var cap = c.benchMaxCap || 1.05;
+    if(benchProgress > cap){ benchProgress = cap; benchVelocity *= -0.3; }
+
+    updateBenchVisual();
+
+    if(!interactionLocked){
+      var thresh = c.benchThreshold || 0.9;
+      if(benchProgress >= thresh){
+        lockOutRep();
+      }
+    }
+  }
+
+  function updateBenchVisual(){
+    var pct = BENCH_MIN_PCT + Math.max(0, benchProgress) * BENCH_SPAN_PCT;
+    benchBar.style.bottom = pct + "%";
+  }
+
+  function lockOutRep(){
+    benchPhase = "descend";
+    completeBenchRep();
+    benchBar.classList.add("drop");
+    benchBar.style.bottom = BENCH_MIN_PCT + "%";
+    setTimeout(function(){
+      benchBar.classList.remove("drop");
+      benchProgress = 0;
+      benchVelocity = 0;
+      benchPhase = "press";
+    }, 300);
+  }
+
+  function completeBenchRep(){
+    benchReps++;
+    comboLabelEl.textContent = "REPS: " + benchReps;
+    comboLabelEl.classList.add("hot");
+    setTimeout(function(){ comboLabelEl.classList.remove("hot"); }, 260);
+
+    if(!meterLocked){
+      var c = cfg();
+      meter = Math.min(100, meter + c.meterGain);
+      updateMeterUI();
+      if(meter >= 100){ triggerLevelComplete(); }
+    }
+
+    var rect = benchBar.getBoundingClientRect();
+    spawnPopup(rect.left + rect.width/2, rect.top + rect.height/2, "REP!");
+    screenShake();
+    benchBarPulse(true);
+  }
+
+  function onBenchClick(e){
+    if(gameEnded || interactionLocked) return;
+    if(benchPhase !== "press") return;
+    e.preventDefault();
+    var c = cfg();
+    lastBenchClickMs = performance.now();
+    benchVelocity = Math.min((c.benchMaxVelocity||2.6), benchVelocity + (c.benchKick||0.52));
+    punches++;
+    updatePunchUI();
+    benchBarPulse(false);
+  }
+
+  function benchBarPulse(big){
+    benchBar.classList.remove(big ? "rep" : "tap");
+    void benchBar.offsetWidth;
+    benchBar.classList.add(big ? "rep" : "tap");
+  }
+
+  // ---------------- SMASH MECHANIC (Level 3 whack-a-mole) ----------------
+  function buildSmashHoles(){
+    smashStage.innerHTML = "";
+    smashHoles = [];
+    for(var i=0;i<8;i++){
+      var hole = document.createElement("div");
+      hole.className = "smashHole";
+      var rim = document.createElement("div");
+      rim.className = "holeRim";
+      var cutout = document.createElement("div");
+      cutout.className = "cutout";
+      cutout.innerHTML =
+        '<div class="cutHead"></div>' +
+        '<div class="cutGlove l"></div>' +
+        '<div class="cutGlove r"></div>' +
+        '<div class="cutBody"></div>';
+      hole.appendChild(rim);
+      hole.appendChild(cutout);
+      smashStage.appendChild(hole);
+      smashHoles.push({ el:hole, cutout:cutout, hits:0, up:false, retractTimer:null });
+    }
+  }
+
+  function scheduleNextSmashSpawn(delay){
+    clearTimeout(smashSpawnTimer);
+    smashSpawnTimer = setTimeout(spawnRandomSmash, delay);
+  }
+
+  function spawnRandomSmash(){
+    if(gameEnded || cfg().mechanic !== "smash") return;
+    var c = cfg();
+    var idx = Math.floor(Math.random()*smashHoles.length);
+    var h = smashHoles[idx];
+    h.hits = 0;
+    h.up = true;
+    smashActiveIdx = idx;
+    h.cutout.classList.add("up");
+    var upMs = (c.smashMinUpMs||1100) + Math.random()*((c.smashMaxUpMs||1900)-(c.smashMinUpMs||1100));
+    h.retractTimer = setTimeout(function(){ retractSmash(idx); }, upMs);
+  }
+
+  function retractSmash(idx){
+    var h = smashHoles[idx];
+    if(!h || !h.up) return;
+    h.up = false;
+    h.cutout.classList.remove("up");
+    if(smashActiveIdx === idx) smashActiveIdx = -1;
+    if(cfg().mechanic === "smash" && !gameEnded && !meterLocked){
+      var c = cfg();
+      var cooldown = (c.smashMinCooldownMs||250) + Math.random()*((c.smashMaxCooldownMs||700)-(c.smashMinCooldownMs||250));
+      scheduleNextSmashSpawn(cooldown);
+    }
+  }
+
+  function onSmashClick(e){
+    if(gameEnded || interactionLocked) return;
+    var target = e.target.closest && e.target.closest(".cutout");
+    if(!target || !target.classList.contains("up")) return;
+    e.preventDefault();
+    var idx = -1;
+    for(var i=0;i<smashHoles.length;i++){ if(smashHoles[i].cutout === target){ idx = i; break; } }
+    if(idx === -1) return;
+    var h = smashHoles[idx];
+    h.hits++;
+    punches++;
+    updatePunchUI();
+    target.classList.remove("hit");
+    void target.offsetWidth;
+    target.classList.add("hit");
+    var c = cfg();
+    var need = c.smashHitsToBreak || 10;
+
+    var point = (e.changedTouches && e.changedTouches[0]) ? e.changedTouches[0] : e;
+    var hx, hy;
+    if(point && typeof point.clientX === "number"){
+      hx = point.clientX; hy = point.clientY;
+    } else {
+      var r = target.getBoundingClientRect();
+      hx = r.left + r.width/2; hy = r.top + r.height*0.4;
+    }
+    spawnHitBurst(hx, hy);
+    spawnPopup(hx, hy - 24, null);
+    screenShake();
+
+    if(h.hits >= need){
+      breakSmash(idx);
+    }
+  }
+
+  function spawnHitBurst(x, y){
+    var c = cfg();
+    var ring = document.createElement("div");
+    ring.className = "hitRing";
+    ring.style.left = x + "px";
+    ring.style.top = y + "px";
+    ring.style.borderColor = c.accent2;
+    popupLayer.appendChild(ring);
+    setTimeout(function(){ ring.remove(); }, 320);
+
+    for(var i=0;i<6;i++){
+      var b = document.createElement("div");
+      b.className = "impact-burst";
+      var ang = Math.random()*Math.PI*2;
+      var dist = 18+Math.random()*30;
+      b.style.setProperty("--dx", (Math.cos(ang)*dist)+"px");
+      b.style.setProperty("--dy", (Math.sin(ang)*dist)+"px");
+      b.style.left = x+"px";
+      b.style.top = y+"px";
+      b.style.background = c.accent;
+      popupLayer.appendChild(b);
+      (function(bEl){ setTimeout(function(){ bEl.remove(); }, 420); })(b);
+    }
+  }
+
+  function breakSmash(idx){
+    var h = smashHoles[idx];
+    var c = cfg();
+    clearTimeout(h.retractTimer);
+    h.up = false;
+    if(smashActiveIdx === idx) smashActiveIdx = -1;
+    h.cutout.classList.remove("hit");
+    h.cutout.classList.add("break");
+    smashBrokenCount++;
+    var breaksNeeded = c.smashBreaksToWin || 10;
+    var isVictory = smashBrokenCount >= breaksNeeded;
+    var rect = h.cutout.getBoundingClientRect();
+    spawnPopup(rect.left + rect.width/2, rect.top + rect.height/2, isVictory ? "KYC UPGRADED!" : "SMASHED!");
+    screenShake();
+    if(isVictory) burstConfetti(35);
+    comboLabelEl.textContent = "SMASHED: " + smashBrokenCount + "/" + breaksNeeded;
+    comboLabelEl.classList.add("hot");
+    setTimeout(function(){ comboLabelEl.classList.remove("hot"); }, 260);
+
+    setTimeout(function(){
+      h.cutout.classList.remove("up","break");
+      h.hits = 0;
+    }, 320);
+
+    if(!meterLocked){
+      meter = Math.min(100, meter + c.meterGain);
+      updateMeterUI();
+      if(meter >= 100){ triggerLevelComplete(); }
+    }
+
+    if(!meterLocked && cfg().mechanic === "smash" && !gameEnded){
+      var cooldown = (c.smashMinCooldownMs||250) + Math.random()*((c.smashMaxCooldownMs||700)-(c.smashMinCooldownMs||250));
+      scheduleNextSmashSpawn(cooldown);
+    }
+  }
+
+  function startSmashMechanic(){
+    smashBrokenCount = 0;
+    smashActiveIdx = -1;
+    clearTimeout(smashSpawnTimer);
+    smashHoles.forEach(function(h){
+      clearTimeout(h.retractTimer);
+      h.up = false; h.hits = 0;
+      h.cutout.classList.remove("up","hit","break");
+    });
+    comboLabelEl.textContent = "SMASHED: 0/" + (cfg().smashBreaksToWin||10);
+    comboLabelEl.classList.remove("hot");
+    scheduleNextSmashSpawn(400);
+  }
+
+  function stopSmashMechanic(){
+    clearTimeout(smashSpawnTimer);
+    smashHoles.forEach(function(h){
+      clearTimeout(h.retractTimer);
+      h.up = false;
+      h.cutout.classList.remove("up","hit","break");
+    });
+    smashActiveIdx = -1;
+  }
+
+  function updateChargeUI(now){
+    var c = cfg();
+    var heldMs = now - chargeStart;
+    var power = Math.min(1, heldMs / c.maxHoldMs);
+    mechBarFill.style.height = (power*100) + "%";
+  }
+
+  // ---------------- PHYSICS LOOP ----------------
+  var K = 6.5; // restoring force strength (lower = bigger, longer swings)
+  var slideElapsed = 0;
+
+  // punch-induced horizontal kick: a separate spring-damper layered on top of
+  // the ambient rail slide. Every hit shoves this sideways by an amount that
+  // depends on click intensity + where on the bag it landed, then it eases
+  // back onto the ambient rail path.
+  var Kx = 9.5;            // spring pulling the punch-kick back to 0
+  var PUNCH_PX_PER_UNIT = 240; // converts impulse units into px/s of kick velocity
+  var punchX = 0, punchVX = 0;
+
+  function loop(now){
+    if(!lastTime) lastTime = now;
+    var dt = Math.min((now-lastTime)/1000, 0.033);
+    lastTime = now;
+
+    var c = cfg();
+
+    var angAccel = -K*Math.sin(theta);
+    omega += angAccel*dt;
+    var dampFactor = Math.pow(c.damping, dt*60);
+    omega *= dampFactor;
+    theta += omega*dt;
+
+    var maxTheta = 1.5;
+    if(theta > maxTheta){ theta = maxTheta; omega *= -0.35; }
+    if(theta < -maxTheta){ theta = -maxTheta; omega *= -0.35; }
+
+    pendulum.style.transform = "rotate(" + theta + "rad)";
+
+    // whole rig slides horizontally rail-to-rail across the arena — a second,
+    // independent axis of motion the player has to track alongside the swing.
+    slideElapsed += dt;
+    var edgeMargin = 90;
+    var maxAmpPx = Math.max(0, (window.innerWidth/2) - edgeMargin);
+    var ampPx = maxAmpPx * c.slideAmpFactor;
+    var slideX = ampPx * (0.7*Math.sin(slideElapsed*c.slideFreq) + 0.3*Math.sin(slideElapsed*c.slideFreq*1.7 + 1.3));
+
+    // punch-kick spring: relaxes back toward 0 (i.e. back onto the rail path)
+    var punchAccel = -Kx*punchX;
+    punchVX += punchAccel*dt;
+    punchVX *= dampFactor;
+    punchX += punchVX*dt;
+    var kickClamp = maxAmpPx*0.9;
+    if(punchX > kickClamp) { punchX = kickClamp; punchVX *= -0.3; }
+    if(punchX < -kickClamp) { punchX = -kickClamp; punchVX *= -0.3; }
+
+    rig.style.transform = "translateX(" + (slideX + punchX) + "px)";
+
+    // mechanic-specific ambient updates (these keep animating even while
+    // interaction is locked, so the scene always feels alive)
+    if(c.mechanic === "benchpress"){ updateBenchPress(now, dt, c); }
+    else if(c.mechanic === "charge" && charging){ updateChargeUI(now); }
+    else if(c.mechanic === "hunter"){
+      if(now - lastRelocate > nextRelocateIn){ relocateWeakPoint(); }
+    }
+
+    // meter decay if idle
+    if(!meterLocked && !interactionLocked && c.mechanic !== "benchpress" && c.mechanic !== "smash"){
+      if(now - lastHitTime > 150){
+        meter = Math.max(0, meter - c.decayRate*dt);
+        updateMeterUI();
+      }
+    }
+
+    if(running) requestAnimationFrame(loop);
+  }
+
+  // ---------------- UI UPDATES ----------------
+  function updateMeterUI(){
+    meterFill.style.width = meter + "%";
+  }
+
+  function updatePunchUI(){
+    punchCountEl.textContent = "UPDATES TRAINED: " + punches;
+  }
+
+  function updateComboUI(mult){
+    comboLabelEl.textContent = "MOMENTUM x" + mult.toFixed(1);
+    if(mult > 1.4){ comboLabelEl.classList.add("hot"); }
+    else { comboLabelEl.classList.remove("hot"); }
+  }
+
+  function showLevelCompleteBtn(){
+    evolveBtn.classList.add("show");
+    evolveBtn.textContent = "⚡ ADD UPGRADE! ⚡";
+    skipBtn.classList.add("hide");
+  }
+  function hideLevelCompleteBtn(){
+    evolveBtn.classList.remove("show");
+    skipBtn.classList.remove("hide");
+  }
+
+  // Fills the meter and puts the level into its "won" state — used both when
+  // the meter naturally reaches 100 and when the player hits Skip Level.
+  function triggerLevelComplete(){
+    if(gameEnded || meterLocked) return;
+    meter = 100;
+    updateMeterUI();
+    meterLocked = true;
+    interactionLocked = true;
+    showLevelCompleteBtn();
+  }
+
+  // ---------------- META HUD (lifetime timer + run count) ----------------
+  function formatTime(ms){
+    var totalSec = Math.floor(ms/1000);
+    var h = Math.floor(totalSec/3600);
+    var m = Math.floor((totalSec%3600)/60);
+    var s = totalSec%60;
+    function pad(n){ return (n<10?"0":"")+n; }
+    return pad(h)+":"+pad(m)+":"+pad(s);
+  }
+  function updateMetaHud(){
+    metaTimeEl.textContent = "TIME " + formatTime(totalTimeMs);
+    metaRunsEl.textContent = "RUNS " + totalRuns;
+  }
+  function loadPersisted(){
+    try{
+      totalTimeMs = parseFloat(localStorage.getItem("nb2_totalTimeMs")) || 0;
+      totalRuns = parseInt(localStorage.getItem("nb2_totalRuns"), 10) || 0;
+    } catch(err){ totalTimeMs = 0; totalRuns = 0; }
+  }
+  function persistTime(){
+    try{ localStorage.setItem("nb2_totalTimeMs", String(totalTimeMs)); } catch(err){}
+  }
+  function persistRuns(){
+    try{ localStorage.setItem("nb2_totalRuns", String(totalRuns)); } catch(err){}
+  }
+  function startTimeTracking(){
+    setInterval(function(){
+      totalTimeMs += 1000;
+      updateMetaHud();
+      persistTime();
+    }, 1000);
+  }
+
+  // ---------------- POPUP TEXT ----------------
+  function spawnPopup(originX, originY, overrideText){
+    var text = overrideText || cfg().text;
+
+    var el = document.createElement("div");
+    el.className = "popup-text";
+    el.textContent = text;
+    var jitterX = (Math.random()-0.5)*60;
+    el.style.left = (originX + jitterX) + "px";
+    el.style.top = originY + "px";
+    popupLayer.appendChild(el);
+    setTimeout(function(){ el.remove(); }, 1200);
+
+    for(var i=0;i<6;i++){
+      var b = document.createElement("div");
+      b.className = "impact-burst";
+      var ang = Math.random()*Math.PI*2;
+      var dist = 20+Math.random()*30;
+      b.style.setProperty("--dx", (Math.cos(ang)*dist)+"px");
+      b.style.setProperty("--dy", (Math.sin(ang)*dist)+"px");
+      b.style.left = originX+"px";
+      b.style.top = originY+"px";
+      b.style.background = cfg().accent2;
+      popupLayer.appendChild(b);
+      (function(bEl){ setTimeout(function(){ bEl.remove(); }, 420); })(b);
+    }
+  }
+
+  function screenShake(){
+    app.classList.remove("shake");
+    void app.offsetWidth;
+    app.classList.add("shake");
+  }
+
+  function bagSquish(){
+    bag.classList.add("squish");
+    setTimeout(function(){ bag.classList.remove("squish"); }, 110);
+  }
+
+  // ---------------- MECHANIC SCORING ----------------
+  // Every level always swings/slides the bag on every punch (visual style stays
+  // consistent) — but how much *progress* a punch earns depends on the level's
+  // specific mini-game mechanic.
+  function evaluateMechanicHit(c, xFrac, yFrac, nowMs){
+    switch(c.mechanic){
+      case "hunter": {
+        var dx = (xFrac - weakPoint.xFrac) / 2;
+        var dy = yFrac - weakPoint.yFrac;
+        var dist = Math.hypot(dx, dy);
+        if(dist <= c.hitRadiusFrac){
+          relocateWeakPoint();
+          return { mult:1.8, tag:"WEAK POINT!" };
+        }
+        return { mult:0.2, tag:null };
+      }
+      default:
+        return { mult:1, tag:null };
+    }
+  }
+
+  // ---------------- CORE PUNCH APPLICATION ----------------
+  // Shared by direct clicks (onHit) and the charge-release mechanic. Always
+  // applies the swing + horizontal kick impulse; meter progress is gated
+  // through evaluateMechanicHit (or an override for charge-power scoring).
+  function applyPunch(clickX, clickY, opts){
+    opts = opts || {};
+    var rect = bag.getBoundingClientRect();
+    var centerX = rect.left + rect.width/2;
+    var offset = clickX - centerX;
+    var sign = offset >= 0 ? -1 : 1;
+    if(Math.abs(offset) < 4){ sign = Math.random() < 0.5 ? 1 : -1; }
+
+    var c = cfg();
+    var jitter = 0.85 + Math.random()*0.45;
+    var nowMs = performance.now();
+
+    var intensity;
+    if(opts.forceIntensity !== undefined){
+      intensity = opts.forceIntensity;
+    } else {
+      var gapSec = Math.max(0.05, (nowMs - lastHitTime) / 1000);
+      var clicksPerSec = 1 / gapSec;
+      intensity = Math.min(2.2, Math.max(0.5, clicksPerSec / 6));
+    }
+
+    var xFrac = Math.max(-1, Math.min(1, offset / (rect.width/2)));
+    var yFrac = Math.max(0, Math.min(1, (clickY - rect.top) / rect.height));
+    var edgeFactor = 0.4 + Math.abs(xFrac) * 0.9;
+    var rotationWeight = 1 - yFrac * 0.55;
+    var translationWeight = 0.45 + yFrac * 0.95;
+
+    if(!opts.skipCombo){
+      var movedPx = (lastClickX === null) ? 999 : Math.hypot(clickX-lastClickX, clickY-lastClickY);
+      var isRapid = (nowMs - lastHitTime)/1000 < 0.35;
+      var isStill = movedPx < 28;
+      if(isRapid && isStill){ comboStreak = Math.min(comboStreak+1, 16); }
+      else { comboStreak = 0; }
+    }
+    lastClickX = clickX; lastClickY = clickY;
+    var comboMult = 1 + comboStreak*0.1;
+    updateComboUI(comboMult);
+
+    var angularImpulse = sign * c.impulseBase * intensity * edgeFactor * rotationWeight * jitter * comboMult;
+    var horizontalImpulse = sign * c.impulseBase * intensity * edgeFactor * translationWeight * jitter * PUNCH_PX_PER_UNIT * comboMult;
+
+    omega += angularImpulse;
+    punchVX += horizontalImpulse;
+
+    lastHitTime = nowMs;
+    punches++;
+    updatePunchUI();
+
+    var tag = null;
+    if(!meterLocked){
+      var scoreInfo = opts.scoreOverride ? opts.scoreOverride(xFrac, yFrac, nowMs) : evaluateMechanicHit(c, xFrac, yFrac, nowMs);
+      var gain = c.meterGain * scoreInfo.mult;
+      meter = Math.min(100, meter + gain);
+      updateMeterUI();
+      tag = scoreInfo.tag;
+      if(meter >= 100){
+        triggerLevelComplete();
+      }
+    }
+
+    spawnPopup(clickX, clickY, tag);
+    bagSquish();
+    screenShake();
+    cursorPunchPulse();
+  }
+
+  // ---------------- HIT HANDLERS ----------------
+  function onHit(e){
+    if(gameEnded || interactionLocked) return;
+    e.preventDefault();
+    var point = (e.touches && e.touches[0]) ? e.touches[0] : e;
+    applyPunch(point.clientX, point.clientY, {});
+  }
+
+  function startCharge(e){
+    if(gameEnded || interactionLocked) return;
+    e.preventDefault();
+    charging = true;
+    chargeStart = performance.now();
+    bagSquish();
+  }
+
+  function releaseCharge(e){
+    if(!charging) return;
+    charging = false;
+    var c = cfg();
+    var heldMs = performance.now() - chargeStart;
+    var power = Math.min(1, heldMs / c.maxHoldMs);
+    mechBarFill.style.height = "0%";
+
+    var point = (e && e.changedTouches && e.changedTouches[0]) ? e.changedTouches[0] : e;
+    var rect = bag.getBoundingClientRect();
+    var clickX = (point && typeof point.clientX === "number") ? point.clientX : (rect.left + rect.width/2);
+    var clickY = (point && typeof point.clientY === "number") ? point.clientY : (rect.top + rect.height/2);
+
+    applyPunch(clickX, clickY, {
+      forceIntensity: 0.6 + power*1.8,
+      skipCombo: true,
+      scoreOverride: function(){
+        var mult = 0.4 + power*1.8;
+        var tag = power > 0.85 ? "MAX POWER!" : (power < 0.25 ? "WEAK TAP" : null);
+        return { mult: mult, tag: tag };
+      }
+    });
+  }
+
+  function onPointerDown(e){
+    if(gameEnded || interactionLocked) return;
+    var mech = cfg().mechanic;
+    if(mech === "charge"){ startCharge(e); }
+    else if(mech === "benchpress"){ onBenchClick(e); }
+    else { onHit(e); }
+  }
+  function onPointerUp(e){
+    if(gameEnded) return;
+    if(cfg().mechanic === "charge" && charging){ releaseCharge(e); }
+  }
+
+  bag.addEventListener("pointerdown", onPointerDown);
+  benchStage.addEventListener("pointerdown", onPointerDown);
+  smashStage.addEventListener("pointerdown", onSmashClick);
+  window.addEventListener("pointerup", onPointerUp);
+  window.addEventListener("pointercancel", onPointerUp);
+
+  // ---------------- SKIP LEVEL ----------------
+  skipBtn.addEventListener("pointerdown", function(e){
+    e.preventDefault();
+    e.stopPropagation();
+    triggerLevelComplete();
+  });
+
+  // ---------------- LEVEL PROGRESSION ----------------
+  evolveBtn.addEventListener("pointerdown", function(e){
+    e.preventDefault();
+    e.stopPropagation();
+    if(gameEnded || !meterLocked) return;
+    if(levelIndex >= LEVELS.length - 1){
+      startFinale();
+    } else {
+      advanceLevel();
+    }
+  });
+
+  function advanceLevel(){
+    hideLevelCompleteBtn();
+    levelIndex++;
+    meter = 0; meterLocked = false; interactionLocked = false;
+    comboStreak = 0; lastClickX = null; lastClickY = null;
+    resetMechanicState();
+    updateMeterUI();
+    applyStageVisuals(false);
+  }
+
+  // ---------------- EVOLVE -> FINALE ----------------
+  // After the final level, hitting Add Upgrade ends the game: one last
+  // knockout swing, the bag breaks loose and drops, then the victory text
+  // fades in over the scene. No further interaction after this.
+  function startFinale(){
+    gameEnded = true;
+    hideLevelCompleteBtn();
+    skipBtn.classList.add("hide");
+    setCustomCursorActive(false);
+
+    totalRuns++;
+    persistRuns();
+    updateMetaHud();
+
+    var c = cfg();
+    var koSign = Math.random() < 0.5 ? 1 : -1;
+    omega += koSign * c.impulseBase * 3.4;
+    punchVX += koSign * PUNCH_PX_PER_UNIT * c.impulseBase * 2.6;
+
+    celebrateFlash.classList.remove("go");
+    void celebrateFlash.offsetWidth;
+    celebrateFlash.classList.add("go");
+    burstConfetti(70);
+
+    hud.style.transition = "opacity 0.5s ease";
+    hud.style.opacity = "0";
+    metaHud.style.opacity = "0";
+
+    setTimeout(function(){
+      running = false;
+      var dropRotation = theta + koSign * 4.2;
+      pendulum.style.transition = "transform 1.15s cubic-bezier(.6,.04,.7,.3)";
+      pendulum.style.transform = "translateY(150vh) rotate(" + dropRotation + "rad)";
+      setTimeout(showFinaleText, 1250);
+    }, 420);
+  }
+
+  function showFinaleText(){
+    finaleOverlay.classList.add("show");
+  }
+
+  // ---------------- INIT ----------------
+  function init(){
+    loadPersisted();
+    updateMetaHud();
+    startTimeTracking();
+    buildSmashHoles();
+    applyStageVisuals(true);
+    resetMechanicState();
+    updateMeterUI();
+    updatePunchUI();
+  }
+
+  startBtn.addEventListener("pointerdown", function(e){
+    e.preventDefault();
+    introOverlay.style.display = "none";
+    running = true;
+    lastTime = null;
+    lastHitTime = performance.now();
+    resetMechanicState();
+    requestAnimationFrame(loop);
+    // small kick so the bag isn't perfectly static on start
+    omega = 0.12;
+    if(cfg().confetti) startConfetti();
+  });
+
+  init();
+
+})();
+</script>
+</body>
+</html>
