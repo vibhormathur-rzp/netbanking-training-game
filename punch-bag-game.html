@@ -248,7 +248,7 @@
     padding:0 1vw;
   }
   .smashHole{
-    position:relative; width:min(11.5vw,150px); height:62vh;
+    position:relative; width:min(17vw,220px); height:62vh;
     flex:0 0 auto; display:flex; align-items:flex-end; justify-content:center;
     overflow:hidden;
   }
@@ -307,6 +307,14 @@
   @keyframes cutBreakAnim{
     0%{ transform:translate(-50%,0%) scale(1) rotate(0deg); opacity:1; }
     100%{ transform:translate(-50%,10%) scale(1.3) rotate(14deg); opacity:0; }
+  }
+  .smashHole.inactive .holeRim{
+    opacity:0.3; filter:grayscale(1) brightness(0.5);
+    box-shadow:0 6px 20px rgba(0,0,0,0.85) inset;
+  }
+  .smashHole.inactive::after{
+    content:""; position:absolute; left:50%; bottom:6%; transform:translateX(-50%);
+    width:26%; height:3px; background:rgba(255,255,255,0.18); border-radius:2px;
   }
 
   /* ---------- SMASH HIT BURST (impact flash on click) ---------- */
@@ -371,21 +379,84 @@
   #skipBtn:active{ background:rgba(255,255,255,0.15); }
   #skipBtn.hide{ opacity:0; pointer-events:none; }
 
-  /* ---------- EVOLVE / UPGRADE BUTTON ---------- */
-  #evolveBtn{
-    position:absolute; top:52%; left:50%; transform:translate(-50%,-50%) scale(0.6);
-    z-index:30; padding:16px 30px; border-radius:40px; border:3px solid #fff;
-    background:linear-gradient(135deg, var(--accent), var(--accent2));
-    color:#1a0a0a; font-size:clamp(14px,2.6vw,22px); letter-spacing:2px;
-    cursor:pointer; opacity:0; pointer-events:none;
-    box-shadow:0 0 30px var(--accent), 0 0 60px rgba(255,255,255,0.4);
-    transition:opacity 0.35s ease, transform 0.35s cubic-bezier(.34,1.56,.64,1);
-    animation:pulseBtn 1.1s ease-in-out infinite;
+  /* ---------- LEVEL CLEAR SCREEN ---------- */
+  /* Sits above the live scene (bag/ring/crowd stay visible, dimmed + blurred
+     behind a scrim) so the level's own background reads through beneath the
+     clearance content instead of being replaced by a blank overlay. */
+  #levelClearOverlay{
+    position:absolute; inset:0; z-index:80; overflow:hidden;
+    display:flex; align-items:center; justify-content:center;
+    opacity:0; pointer-events:none;
+    transition:opacity 0.4s ease;
   }
-  #evolveBtn.show{ opacity:1; transform:translate(-50%,-50%) scale(1); pointer-events:auto; }
-  @keyframes pulseBtn{
-    0%,100%{ box-shadow:0 0 20px var(--accent), 0 0 40px rgba(255,255,255,0.25); }
-    50%{ box-shadow:0 0 40px var(--accent), 0 0 80px rgba(255,255,255,0.5); }
+  #levelClearOverlay.show{ opacity:1; pointer-events:auto; }
+  .clearScrim{
+    position:absolute; inset:0;
+    background:
+      radial-gradient(ellipse at 50% 34%, rgba(10,6,10,0.4) 0%, rgba(4,2,6,0.78) 60%, rgba(2,1,4,0.9) 100%);
+    -webkit-backdrop-filter:blur(3px); backdrop-filter:blur(3px);
+  }
+  .clearScrim::after{
+    content:""; position:absolute; inset:0; pointer-events:none;
+    background-image:repeating-linear-gradient(0deg, rgba(255,255,255,0.03) 0px, rgba(255,255,255,0.03) 1px, transparent 1px, transparent 3px);
+    mix-blend-mode:overlay; opacity:0.5;
+  }
+  #levelClearOverlay .clearContent{
+    position:relative; z-index:2; display:flex; flex-direction:column; align-items:center;
+    max-width:600px; padding:0 6vw; text-align:center; color:#fff;
+    transform:scale(0.82) translateY(10px); opacity:0;
+    transition:transform 0.5s cubic-bezier(.2,1.4,.4,1), opacity 0.4s ease;
+  }
+  #levelClearOverlay.show .clearContent{ transform:scale(1) translateY(0); opacity:1; }
+  .clearRibbon{
+    display:inline-flex; align-items:center; gap:8px; padding:6px 20px; margin-bottom:14px;
+    border-radius:30px; background:linear-gradient(135deg, var(--accent), var(--accent2));
+    color:#1a0a0a; font-weight:900; letter-spacing:2.5px; font-size:clamp(11px,1.8vw,13px);
+    box-shadow:0 0 26px var(--accent);
+  }
+  #levelClearOverlay.show .clearRibbon{ animation:clearRibbonPop 0.55s cubic-bezier(.2,1.6,.4,1); }
+  @keyframes clearRibbonPop{
+    0%{ transform:scale(0.4) rotate(-10deg); opacity:0; }
+    60%{ transform:scale(1.14) rotate(3deg); opacity:1; }
+    100%{ transform:scale(1) rotate(0); }
+  }
+  .clearIcon{
+    width:clamp(46px,8vw,64px); height:clamp(46px,8vw,64px); margin-bottom:4px;
+    filter:drop-shadow(0 0 16px var(--accent));
+  }
+  #levelClearOverlay h2{
+    font-size:clamp(22px,5.6vw,40px); margin:2px 0 10px; letter-spacing:1.5px; font-weight:900;
+    line-height:1.1;
+    background:linear-gradient(115deg, #fff 20%, var(--accent) 48%, var(--accent2) 62%, #fff 85%);
+    background-size:250% 100%; -webkit-background-clip:text; background-clip:text; color:transparent;
+    filter:drop-shadow(0 0 20px var(--accent));
+    animation:titleShine 3.6s linear infinite;
+  }
+  .clearFeatureChip{
+    display:inline-flex; align-items:center; gap:6px; padding:6px 16px; margin-bottom:14px;
+    border-radius:20px; background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.22);
+    font-size:clamp(9.5px,1.6vw,11.5px); letter-spacing:2px; font-weight:700; color:#c9c2c2;
+  }
+  .clearFeatureChip b{ color:#fff; margin-left:4px; }
+  #levelClearOverlay p{
+    font-size:clamp(12.5px,2.1vw,15.5px); color:#dcd3d3; line-height:1.6; max-width:520px; margin:0 0 22px;
+  }
+  #evolveBtn{
+    position:relative; padding:15px 38px; border-radius:40px; border:3px solid #fff; cursor:pointer;
+    background:linear-gradient(135deg, var(--accent), var(--accent2));
+    color:#1a0a0a; font-size:clamp(14px,2.4vw,19px); letter-spacing:2.5px; font-weight:900;
+    box-shadow:0 0 30px var(--accent); overflow:hidden;
+    animation:btnPulse 1.8s ease-in-out infinite;
+  }
+  #evolveBtn::after{
+    content:""; position:absolute; top:0; left:-60%; width:40%; height:100%;
+    background:linear-gradient(115deg, transparent, rgba(255,255,255,0.65), transparent);
+    transform:skewX(-20deg); animation:btnShine 2.4s ease-in-out infinite;
+  }
+  #evolveBtn:active{ transform:scale(0.96); }
+  .clearHint{
+    margin-top:12px; font-size:clamp(9.5px,1.6vw,11px); letter-spacing:2.5px; font-weight:800;
+    color:rgba(255,255,255,0.5);
   }
 
   /* ---------- RIG / PENDULUM ---------- */
@@ -483,25 +554,153 @@
 
   /* ---------- INTRO OVERLAY ---------- */
   #introOverlay{
-    position:absolute; inset:0; z-index:100; background:rgba(3,1,6,0.92);
+    position:absolute; inset:0; z-index:100; overflow:hidden;
+    background:
+      radial-gradient(ellipse at 50% 18%, rgba(255,120,90,0.16) 0%, rgba(0,0,0,0) 55%),
+      radial-gradient(ellipse at 50% 100%, rgba(92,255,224,0.10) 0%, rgba(0,0,0,0) 60%),
+      linear-gradient(180deg, rgba(4,1,7,0.94), rgba(3,1,6,0.97) 60%, rgba(2,1,4,0.98));
     display:flex; flex-direction:column; align-items:center; justify-content:center;
-    text-align:center; color:#fff; padding:0 6vw;
+    text-align:center; color:#fff; padding:4vh 6vw;
+  }
+  #introOverlay::before{
+    content:""; position:absolute; inset:0; pointer-events:none; z-index:1;
+    background-image:repeating-linear-gradient(0deg, rgba(255,255,255,0.035) 0px, rgba(255,255,255,0.035) 1px, transparent 1px, transparent 3px);
+    mix-blend-mode:overlay; opacity:0.5;
+  }
+  #introOverlay::after{
+    content:""; position:absolute; inset:0; pointer-events:none; z-index:1;
+    box-shadow:inset 0 0 18vw rgba(0,0,0,0.85);
+  }
+  .introEmbers{ position:absolute; inset:0; z-index:1; pointer-events:none; overflow:hidden; }
+  .introEmbers span{
+    position:absolute; bottom:-6%; width:5px; height:5px; border-radius:50%;
+    background:var(--accent2); opacity:0; filter:blur(0.3px);
+    box-shadow:0 0 8px 2px var(--accent2);
+    animation:emberRise linear infinite;
+  }
+  @keyframes emberRise{
+    0%{ transform:translateY(0) translateX(0) scale(0.6); opacity:0; }
+    8%{ opacity:0.9; }
+    85%{ opacity:0.55; }
+    100%{ transform:translateY(-108vh) translateX(var(--drift,20px)) scale(1.1); opacity:0; }
+  }
+  .introContent{
+    position:relative; z-index:2; display:flex; flex-direction:column; align-items:center;
+    max-width:640px;
+  }
+  .introBadge{
+    display:inline-flex; align-items:center; gap:8px; padding:6px 18px; margin-bottom:18px;
+    border:1px solid rgba(255,255,255,0.35); border-radius:30px; background:rgba(255,255,255,0.06);
+    font-size:clamp(10px,1.7vw,12px); letter-spacing:3px; color:#e8dede; font-weight:700;
+    box-shadow:0 0 16px rgba(255,255,255,0.08);
+  }
+  .introBadge .dot{ width:6px; height:6px; border-radius:50%; background:var(--accent2); box-shadow:0 0 8px var(--accent2); }
+  .introIcon{
+    width:clamp(56px,10vw,84px); height:clamp(56px,10vw,84px); margin-bottom:6px;
+    filter:drop-shadow(0 0 16px var(--accent));
+    animation:introIconFloat 3.2s ease-in-out infinite;
+  }
+  @keyframes introIconFloat{
+    0%,100%{ transform:translateY(0) rotate(-3deg); }
+    50%{ transform:translateY(-8px) rotate(3deg); }
   }
   #introOverlay h1{
-    font-size:clamp(28px,7vw,56px); margin:0 0 10px; letter-spacing:3px;
-    color:#fff; text-shadow:0 0 20px var(--accent);
+    position:relative; font-size:clamp(30px,7.4vw,60px); margin:2px 0 8px; letter-spacing:2px;
+    font-weight:900; line-height:1.05;
+    background:linear-gradient(115deg, #fff 20%, var(--accent) 48%, var(--accent2) 62%, #fff 85%);
+    background-size:250% 100%;
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+    text-shadow:0 4px 18px rgba(0,0,0,0.6);
+    filter:drop-shadow(0 0 22px var(--accent));
+    animation:titleShine 3.6s linear infinite;
   }
+  @keyframes titleShine{
+    0%{ background-position:0% 50%; }
+    100%{ background-position:-250% 50%; }
+  }
+  .introEvo{
+    display:inline-flex; align-items:center; gap:10px; margin-bottom:16px;
+    font-size:clamp(11px,2vw,13px); letter-spacing:2px; font-weight:800; color:#cfcfcf;
+    padding:5px 14px; border-radius:20px; background:rgba(0,0,0,0.35); border:1px solid rgba(255,255,255,0.12);
+  }
+  .introEvo .old{ color:#9a8f8f; text-decoration:line-through; text-decoration-color:rgba(255,90,90,0.6); }
+  .introEvo .arrow{ color:var(--accent2); text-shadow:0 0 10px var(--accent2); }
+  .introEvo .new{ color:#fff; text-shadow:0 0 10px var(--accent2); }
   #introOverlay p{
-    font-size:clamp(13px,2.4vw,17px); color:#d9c9c9; max-width:560px; line-height:1.6;
-    letter-spacing:0.5px; margin:0 0 24px;
+    position:relative; font-size:clamp(12.5px,2.2vw,16px); color:#d9c9c9; max-width:560px; line-height:1.6;
+    letter-spacing:0.3px; margin:0 0 22px;
   }
+  .roundStrip{
+    display:flex; align-items:flex-start; justify-content:center; gap:clamp(6px,2vw,18px);
+    margin-bottom:22px; padding:0 2px; width:100%; max-width:520px;
+  }
+  .roundNode{
+    position:relative; display:flex; flex-direction:column; align-items:center; gap:6px;
+    flex:1; min-width:0;
+  }
+  .roundNode::before{
+    content:""; position:absolute; top:16px; left:-50%; width:100%; height:2px;
+    background:linear-gradient(90deg, rgba(255,255,255,0.25), rgba(255,255,255,0.08));
+    z-index:0;
+  }
+  .roundNode:first-child::before{ display:none; }
+  .roundNode .ring{
+    position:relative; z-index:1; width:32px; height:32px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    background:rgba(255,255,255,0.05); border:2px solid rgba(255,255,255,0.22);
+    color:#cfc7c7;
+  }
+  .roundNode .ring svg{ width:15px; height:15px; }
+  .roundNode.active .ring{
+    background:linear-gradient(135deg, var(--accent), var(--accent2));
+    border-color:#fff; color:#1a0a0a;
+    box-shadow:0 0 16px var(--accent), 0 0 4px #fff inset;
+    animation:nodePulse 1.6s ease-in-out infinite;
+  }
+  @keyframes nodePulse{
+    0%,100%{ box-shadow:0 0 12px var(--accent); }
+    50%{ box-shadow:0 0 24px var(--accent), 0 0 10px var(--accent2); }
+  }
+  .roundNode .lbl{
+    font-size:clamp(7px,1.5vw,9px); letter-spacing:1px; font-weight:800; color:#9d9494;
+    text-align:center; line-height:1.3;
+  }
+  .roundNode.active .lbl{ color:#fff; }
+  .introStats{
+    display:flex; gap:14px; margin-bottom:22px; flex-wrap:wrap; justify-content:center;
+  }
+  .statChip{
+    padding:7px 16px; border-radius:10px; background:rgba(255,255,255,0.05);
+    border:1px solid rgba(255,255,255,0.14); font-size:clamp(9.5px,1.6vw,11px);
+    letter-spacing:1.5px; color:#c9c2c2; font-weight:700;
+  }
+  .statChip b{ color:#fff; font-size:1.15em; margin-left:5px; }
   #startBtn{
-    padding:14px 36px; border-radius:40px; border:3px solid #fff; cursor:pointer;
+    position:relative; padding:15px 42px; border-radius:40px; border:3px solid #fff; cursor:pointer;
     background:linear-gradient(135deg, var(--accent), var(--accent2));
     color:#1a0a0a; font-size:clamp(15px,2.6vw,20px); letter-spacing:3px; font-weight:900;
     box-shadow:0 0 30px var(--accent);
+    animation:btnPulse 1.8s ease-in-out infinite;
+    overflow:hidden;
+  }
+  #startBtn::after{
+    content:""; position:absolute; top:0; left:-60%; width:40%; height:100%;
+    background:linear-gradient(115deg, transparent, rgba(255,255,255,0.65), transparent);
+    transform:skewX(-20deg); animation:btnShine 2.4s ease-in-out infinite;
+  }
+  @keyframes btnShine{
+    0%{ left:-60%; } 55%{ left:130%; } 100%{ left:130%; }
+  }
+  @keyframes btnPulse{
+    0%,100%{ box-shadow:0 0 22px var(--accent), 0 0 0 rgba(255,255,255,0); transform:scale(1); }
+    50%{ box-shadow:0 0 40px var(--accent), 0 0 18px var(--accent2); transform:scale(1.035); }
   }
   #startBtn:active{ transform:scale(0.96); }
+  .pressHint{
+    margin-top:14px; font-size:clamp(9.5px,1.6vw,11px); letter-spacing:3px; font-weight:800;
+    color:rgba(255,255,255,0.55); animation:hintBlink 1.3s steps(1) infinite;
+  }
+  @keyframes hintBlink{ 0%,49%{ opacity:1; } 50%,100%{ opacity:0.15; } }
 
   #celebrateFlash{
     position:absolute; inset:0; z-index:90; background:#fff; opacity:0;
@@ -604,7 +803,30 @@
   <div id="smashStage"></div>
 
   <button id="skipBtn">SKIP LEVEL ⏭</button>
-  <button id="evolveBtn">⚡ ADD UPGRADE! ⚡</button>
+
+  <div id="levelClearOverlay">
+    <div class="clearScrim"></div>
+    <div class="clearContent">
+      <div class="clearRibbon">ROUND <span id="clearRoundNum">1</span> &middot; <span id="clearTag">TKO</span></div>
+      <svg class="clearIcon" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="clearGloveGrad" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stop-color="var(--accent)"/>
+            <stop offset="1" stop-color="var(--accent2)"/>
+          </linearGradient>
+        </defs>
+        <path fill="url(#clearGloveGrad)" d="M30 46c0-14 10-24 23-24s22 9 23 21c1 2 4 3 4 8v16c0 3-2 5-4 6-1 9-10 17-23 17-14 0-24-9-25-21z"/>
+        <path fill="rgba(0,0,0,0.18)" d="M30 46c0-14 10-24 23-24 2 0 4 0 6 1-9 2-16 11-16 23v29c-8-3-13-11-13-18z"/>
+        <path fill="#1a0a0a" d="M35 62c6 3 13 4 20 4s14-1 20-4v5c-6 3-13 5-20 5s-14-2-20-5z" opacity="0.5"/>
+        <path stroke="#fff" stroke-width="3" stroke-linecap="round" fill="none" d="M20 20l12 14M78 20L66 34"/>
+      </svg>
+      <h2 id="clearHeadline">MOBILE-FIRST KNOCKOUT</h2>
+      <div class="clearFeatureChip">UPGRADE UNLOCKED <b id="clearFeatureName">MOBILE-FIRST</b></div>
+      <p id="clearBody">Clean swings, every angle covered — netbanking now throws the same full-strength combo on any device.</p>
+      <button id="evolveBtn">⚡ NEXT ROUND ⚡</button>
+      <div class="clearHint">TRAINING PROGRESS: 100%</div>
+    </div>
+  </div>
 
   <div id="customCursor">
     <div class="glove-cuff"></div>
@@ -636,11 +858,76 @@
   </div>
 
   <div id="introOverlay">
-    <h1>TRAIN THE UPGRADE</h1>
-    <p>This legacy netbanking system needs training across 5 rounds of new tech updates.<br>
-    Each round is a different challenge — swings, reps, smashes, precision and power.<br>
-    Fill the Training Progress bar each round and hit Add Upgrade to move on. Clear all 5 to crown the new payment champion.</p>
-    <button id="startBtn">START TRAINING</button>
+    <div class="introEmbers">
+      <span style="left:6%; --drift:14px; animation-duration:5.2s; animation-delay:0.1s;"></span>
+      <span style="left:14%; --drift:-18px; animation-duration:6.8s; animation-delay:1.4s;"></span>
+      <span style="left:23%; --drift:10px; animation-duration:4.6s; animation-delay:0.6s;"></span>
+      <span style="left:33%; --drift:-8px; animation-duration:7.4s; animation-delay:2.1s;"></span>
+      <span style="left:44%; --drift:16px; animation-duration:5.6s; animation-delay:0.9s;"></span>
+      <span style="left:55%; --drift:-14px; animation-duration:6.1s; animation-delay:1.8s;"></span>
+      <span style="left:64%; --drift:12px; animation-duration:5s; animation-delay:0.3s;"></span>
+      <span style="left:73%; --drift:-10px; animation-duration:7s; animation-delay:2.6s;"></span>
+      <span style="left:82%; --drift:18px; animation-duration:4.8s; animation-delay:1.1s;"></span>
+      <span style="left:91%; --drift:-16px; animation-duration:6.4s; animation-delay:0.4s;"></span>
+      <span style="left:50%; --drift:6px; animation-duration:5.9s; animation-delay:1.6s;"></span>
+    </div>
+
+    <div class="introContent">
+      <div class="introBadge"><span class="dot"></span>SEASON 1 &middot; TRAINING ARC</div>
+
+      <svg class="introIcon" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="introGloveGrad" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stop-color="var(--accent)"/>
+            <stop offset="1" stop-color="var(--accent2)"/>
+          </linearGradient>
+        </defs>
+        <path fill="url(#introGloveGrad)" d="M30 46c0-14 10-24 23-24s22 9 23 21c1 2 4 3 4 8v16c0 3-2 5-4 6-1 9-10 17-23 17-14 0-24-9-25-21z"/>
+        <path fill="rgba(0,0,0,0.18)" d="M30 46c0-14 10-24 23-24 2 0 4 0 6 1-9 2-16 11-16 23v29c-8-3-13-11-13-18z"/>
+        <path fill="#1a0a0a" d="M35 62c6 3 13 4 20 4s14-1 20-4v5c-6 3-13 5-20 5s-14-2-20-5z" opacity="0.5"/>
+        <path stroke="#fff" stroke-width="2.5" stroke-linecap="round" fill="none" d="M13 20l10 10M13 30l14 3" opacity="0.9"/>
+        <path stroke="#fff" stroke-width="2.5" stroke-linecap="round" fill="none" d="M87 20L77 30M87 30l-14 3" opacity="0.9"/>
+        <path fill="#fff" d="M52 8l-9 15h6l-4 11 13-16h-7z"/>
+      </svg>
+
+      <h1>TRAIN THE UPGRADE</h1>
+      <div class="introEvo"><span class="old">NETBANKING 1.0</span><span class="arrow">&#9654;</span><span class="new">NETBANKING 2.0</span></div>
+
+      <p>This legacy system needs training across 5 rounds of new tech updates.<br>
+      Swings, reps, smashes, precision and power — a different challenge every round.<br>
+      Fill the Training Progress bar and hit Add Upgrade to advance. Clear all 5 to crown the new payment champion.</p>
+
+      <div class="roundStrip" id="introRoundStrip">
+        <div class="roundNode active">
+          <div class="ring"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="3"/><line x1="5" y1="18" x2="19" y2="18"/></svg></div>
+          <div class="lbl">MOBILE<br>FIRST</div>
+        </div>
+        <div class="roundNode">
+          <div class="ring"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 11 14 9 22 21 10 13 10 13 2"/></svg></div>
+          <div class="lbl">ZERO<br>LATENCY</div>
+        </div>
+        <div class="roundNode">
+          <div class="ring"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg></div>
+          <div class="lbl">ONE-CLICK<br>KYC</div>
+        </div>
+        <div class="roundNode">
+          <div class="ring"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 16 14"/></svg></div>
+          <div class="lbl">REAL-TIME<br>SETTLE</div>
+        </div>
+        <div class="roundNode">
+          <div class="ring"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h4M17 21a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2h-4M9 9l3 3-3 3M15 15l-3-3 3-3"/></svg></div>
+          <div class="lbl">SEAMLESS<br>UPI</div>
+        </div>
+      </div>
+
+      <div class="introStats">
+        <div class="statChip">LIFETIME TRAINING<b id="introStatTime">00:00:00</b></div>
+        <div class="statChip">TOTAL RUNS<b id="introStatRuns">0</b></div>
+      </div>
+
+      <button id="startBtn">START TRAINING</button>
+      <div class="pressHint">TAP TO BEGIN &middot; ROUND 1 OF 5</div>
+    </div>
   </div>
 
 </div>
@@ -660,7 +947,10 @@
       matColor:"#7a1f2b", postColor:"#f3d16b", ropeColor:"#ffd166",
       crowdCount:100, crowdColor:[255,215,120], crowdOpacity:0.75,
       impulseBase:0.96, damping:0.982, decayRate:44, meterGain:6,
-      slideAmpFactor:0.95, slideFreq:0.82, confetti:true },
+      slideAmpFactor:0.95, slideFreq:0.82, confetti:true,
+      clearTag:"TKO", clearHeadline:"MOBILE-FIRST KNOCKOUT",
+      clearBody:"Clean swings, every angle covered — the bag never even saw the footwork coming. Netbanking now throws the same full-strength combo on phone, tablet, or desktop.",
+      clearBtn:"NEXT ROUND" },
 
     { mechanic:"benchpress", text:"ZERO LATENCY",     name:"UPGRADE 2 · ZERO LATENCY",
       accent:"#ff9d5c", accent2:"#ffe45c",
@@ -671,7 +961,10 @@
       slideAmpFactor:0, slideFreq:0, confetti:true,
       benchGravity:2.7, benchDamping:0.965, benchKick:0.52, benchMaxVelocity:2.6,
       benchContinuityMs:150, benchIdleGravityMult:3,
-      benchThreshold:0.9, benchMaxCap:1.05 },
+      benchThreshold:0.9, benchMaxCap:1.05,
+      clearTag:"LOCKOUT", clearHeadline:"ZERO LATENCY LOCKOUT",
+      clearBody:"Rep after rep, no grinding, no stalling under the bar. Transactions now lock out just as clean — confirmed the instant you press, no gap between click and confirmation.",
+      clearBtn:"NEXT ROUND" },
 
     { mechanic:"smash",  text:"ONE-CLICK KYC",        name:"UPGRADE 3 · ONE-CLICK KYC",
       accent:"#c792ff", accent2:"#5cffe0",
@@ -680,9 +973,12 @@
       crowdCount:105, crowdColor:[210,170,255], crowdOpacity:0.75,
       impulseBase:1.0, damping:0.982, decayRate:0, meterGain:10,
       slideAmpFactor:0, slideFreq:0, confetti:true,
-      smashHitsToBreak:10, smashBreaksToWin:10,
+      smashHitsToBreak:6, smashBreaksToWin:5, smashHoleCount:5,
       smashMinUpMs:1100, smashMaxUpMs:1900,
-      smashMinCooldownMs:250, smashMaxCooldownMs:700 },
+      smashMinCooldownMs:250, smashMaxCooldownMs:700,
+      clearTag:"ALL 5 DOWN", clearHeadline:"ONE-CLICK KYC SWEEP",
+      clearBody:"Five guards up, five guards smashed clean — not one left standing. Identity checks that used to take days now go down in a single one-click combo.",
+      clearBtn:"NEXT ROUND" },
 
     { mechanic:"hunter", text:"REAL-TIME SETTLEMENT", name:"UPGRADE 4 · REAL-TIME SETTLEMENT",
       accent:"#5cff8f", accent2:"#ffd15c",
@@ -691,7 +987,10 @@
       crowdCount:105, crowdColor:[160,230,180], crowdOpacity:0.75,
       impulseBase:1.02, damping:0.982, decayRate:55, meterGain:5,
       slideAmpFactor:0.95, slideFreq:0.88, confetti:true,
-      relocMinMs:1200, relocMaxMs:1800, hitRadiusFrac:0.3 },
+      relocMinMs:1200, relocMaxMs:1800, hitRadiusFrac:0.3,
+      clearTag:"SPOTTED & DROPPED", clearHeadline:"REAL-TIME SETTLEMENT",
+      clearBody:"You read every opening and landed the shot before it closed. Funds now settle the moment the bell rings — no more waiting rounds for money to hit the account.",
+      clearBtn:"NEXT ROUND" },
 
     { mechanic:"charge", text:"SEAMLESS UPI",         name:"UPGRADE 5 · SEAMLESS UPI",
       accent:"#ff5c8a", accent2:"#5cc8ff",
@@ -700,7 +999,10 @@
       crowdCount:110, crowdColor:[255,170,210], crowdOpacity:0.78,
       impulseBase:1.05, damping:0.982, decayRate:55, meterGain:4,
       slideAmpFactor:0.95, slideFreq:0.9, confetti:true,
-      maxHoldMs:1100 }
+      maxHoldMs:1100,
+      clearTag:"FULL POWER", clearHeadline:"SEAMLESS UPI RELEASE",
+      clearBody:"Loaded up, released clean — one seamless motion, full power, no fumble. Payments now move the exact same way: charge, release, done.",
+      clearBtn:"FINISH THE FIGHT" }
   ];
 
   // ---------------- STATE ----------------
@@ -735,12 +1037,19 @@
   var pendulum = document.getElementById("pendulum");
   var bag = document.getElementById("bag");
   var rig = document.getElementById("rig");
+  var ringMat = document.getElementById("ringMat");
   var meterFill = document.getElementById("meterFill");
   var stageLabel = document.getElementById("stageLabel");
   var punchCountEl = document.getElementById("punchCount");
   var comboLabelEl = document.getElementById("comboLabel");
   var evolveBtn = document.getElementById("evolveBtn");
   var skipBtn = document.getElementById("skipBtn");
+  var levelClearOverlay = document.getElementById("levelClearOverlay");
+  var clearRoundNumEl = document.getElementById("clearRoundNum");
+  var clearTagEl = document.getElementById("clearTag");
+  var clearHeadlineEl = document.getElementById("clearHeadline");
+  var clearFeatureNameEl = document.getElementById("clearFeatureName");
+  var clearBodyEl = document.getElementById("clearBody");
   var customCursor = document.getElementById("customCursor");
   var popupLayer = document.getElementById("popupLayer");
   var bgA = document.getElementById("bgLayerA");
@@ -752,6 +1061,8 @@
   var celebrateFlash = document.getElementById("celebrateFlash");
   var introOverlay = document.getElementById("introOverlay");
   var startBtn = document.getElementById("startBtn");
+  var introStatTimeEl = document.getElementById("introStatTime");
+  var introStatRunsEl = document.getElementById("introStatRuns");
   var hud = document.getElementById("hud");
   var finaleOverlay = document.getElementById("finaleOverlay");
   var metaHud = document.getElementById("metaHud");
@@ -882,7 +1193,7 @@
       comboLabelEl.textContent = "REPS: 0";
       comboLabelEl.classList.remove("hot");
     } else if(isSmash){
-      comboLabelEl.textContent = "SMASHED: 0/" + (cfg().smashBreaksToWin||10);
+      comboLabelEl.textContent = "SMASHED: 0/" + (cfg().smashBreaksToWin||5);
       comboLabelEl.classList.remove("hot");
     } else {
       comboLabelEl.textContent = "MOMENTUM x1.0";
@@ -1060,7 +1371,10 @@
   function buildSmashHoles(){
     smashStage.innerHTML = "";
     smashHoles = [];
-    for(var i=0;i<8;i++){
+    var smashCfg = null;
+    for(var li=0; li<LEVELS.length; li++){ if(LEVELS[li].mechanic === "smash"){ smashCfg = LEVELS[li]; break; } }
+    var holeCount = (smashCfg && smashCfg.smashHoleCount) || 5;
+    for(var i=0;i<holeCount;i++){
       var hole = document.createElement("div");
       hole.className = "smashHole";
       var rim = document.createElement("div");
@@ -1075,7 +1389,7 @@
       hole.appendChild(rim);
       hole.appendChild(cutout);
       smashStage.appendChild(hole);
-      smashHoles.push({ el:hole, cutout:cutout, hits:0, up:false, retractTimer:null });
+      smashHoles.push({ el:hole, cutout:cutout, hits:0, up:false, retractTimer:null, broken:false });
     }
   }
 
@@ -1084,16 +1398,28 @@
     smashSpawnTimer = setTimeout(spawnRandomSmash, delay);
   }
 
+  // As more holes go permanently dark, the remaining ones pop up faster —
+  // the last few upgrades in the run feel more urgent than the first.
+  function smashSpeedMult(c){
+    var breaksNeeded = c.smashBreaksToWin || 5;
+    var progress = Math.min(1, smashBrokenCount / breaksNeeded);
+    return 1 - progress*0.4; // up to 40% quicker by the final hole
+  }
+
   function spawnRandomSmash(){
     if(gameEnded || cfg().mechanic !== "smash") return;
     var c = cfg();
-    var idx = Math.floor(Math.random()*smashHoles.length);
+    var avail = [];
+    for(var i=0;i<smashHoles.length;i++){ if(!smashHoles[i].broken) avail.push(i); }
+    if(avail.length === 0) return; // every hole cleared — level already won
+    var idx = avail[Math.floor(Math.random()*avail.length)];
     var h = smashHoles[idx];
     h.hits = 0;
     h.up = true;
     smashActiveIdx = idx;
     h.cutout.classList.add("up");
-    var upMs = (c.smashMinUpMs||1100) + Math.random()*((c.smashMaxUpMs||1900)-(c.smashMinUpMs||1100));
+    var mult = smashSpeedMult(c);
+    var upMs = ((c.smashMinUpMs||1100) + Math.random()*((c.smashMaxUpMs||1900)-(c.smashMinUpMs||1100))) * mult;
     h.retractTimer = setTimeout(function(){ retractSmash(idx); }, upMs);
   }
 
@@ -1105,8 +1431,11 @@
     if(smashActiveIdx === idx) smashActiveIdx = -1;
     if(cfg().mechanic === "smash" && !gameEnded && !meterLocked){
       var c = cfg();
-      var cooldown = (c.smashMinCooldownMs||250) + Math.random()*((c.smashMaxCooldownMs||700)-(c.smashMinCooldownMs||250));
-      scheduleNextSmashSpawn(cooldown);
+      var stillAvailable = smashHoles.some(function(hh){ return !hh.broken; });
+      if(stillAvailable){
+        var cooldown = ((c.smashMinCooldownMs||250) + Math.random()*((c.smashMaxCooldownMs||700)-(c.smashMinCooldownMs||250))) * smashSpeedMult(c);
+        scheduleNextSmashSpawn(cooldown);
+      }
     }
   }
 
@@ -1119,6 +1448,7 @@
     for(var i=0;i<smashHoles.length;i++){ if(smashHoles[i].cutout === target){ idx = i; break; } }
     if(idx === -1) return;
     var h = smashHoles[idx];
+    if(h.broken) return; // already smashed — this hole is retired for the level
     h.hits++;
     punches++;
     updatePunchUI();
@@ -1126,7 +1456,7 @@
     void target.offsetWidth;
     target.classList.add("hit");
     var c = cfg();
-    var need = c.smashHitsToBreak || 10;
+    var need = c.smashHitsToBreak || 6;
 
     var point = (e.changedTouches && e.changedTouches[0]) ? e.changedTouches[0] : e;
     var hx, hy;
@@ -1175,11 +1505,13 @@
     var c = cfg();
     clearTimeout(h.retractTimer);
     h.up = false;
+    h.broken = true;
     if(smashActiveIdx === idx) smashActiveIdx = -1;
-    h.cutout.classList.remove("hit");
+    h.cutout.classList.remove("hit","up");
     h.cutout.classList.add("break");
+    h.el.classList.add("inactive");
     smashBrokenCount++;
-    var breaksNeeded = c.smashBreaksToWin || 10;
+    var breaksNeeded = c.smashBreaksToWin || 5;
     var isVictory = smashBrokenCount >= breaksNeeded;
     var rect = h.cutout.getBoundingClientRect();
     spawnPopup(rect.left + rect.width/2, rect.top + rect.height/2, isVictory ? "KYC UPGRADED!" : "SMASHED!");
@@ -1188,21 +1520,22 @@
     comboLabelEl.textContent = "SMASHED: " + smashBrokenCount + "/" + breaksNeeded;
     comboLabelEl.classList.add("hot");
     setTimeout(function(){ comboLabelEl.classList.remove("hot"); }, 260);
-
-    setTimeout(function(){
-      h.cutout.classList.remove("up","break");
-      h.hits = 0;
-    }, 320);
+    // note: no reset-to-normal timeout here anymore — once a cutout is
+    // smashed it stays broken/hidden in its hole (cutBreakAnim's "forwards"
+    // fill keeps it invisible) and that hole is retired for the rest of the level.
 
     if(!meterLocked){
       meter = Math.min(100, meter + c.meterGain);
       updateMeterUI();
-      if(meter >= 100){ triggerLevelComplete(); }
+      if(isVictory || meter >= 100){ triggerLevelComplete(); }
     }
 
-    if(!meterLocked && cfg().mechanic === "smash" && !gameEnded){
-      var cooldown = (c.smashMinCooldownMs||250) + Math.random()*((c.smashMaxCooldownMs||700)-(c.smashMinCooldownMs||250));
-      scheduleNextSmashSpawn(cooldown);
+    if(!meterLocked && cfg().mechanic === "smash" && !gameEnded && !isVictory){
+      var stillAvailable = smashHoles.some(function(hh){ return !hh.broken; });
+      if(stillAvailable){
+        var cooldown = ((c.smashMinCooldownMs||250) + Math.random()*((c.smashMaxCooldownMs||700)-(c.smashMinCooldownMs||250))) * smashSpeedMult(c);
+        scheduleNextSmashSpawn(cooldown);
+      }
     }
   }
 
@@ -1212,10 +1545,11 @@
     clearTimeout(smashSpawnTimer);
     smashHoles.forEach(function(h){
       clearTimeout(h.retractTimer);
-      h.up = false; h.hits = 0;
+      h.up = false; h.hits = 0; h.broken = false;
       h.cutout.classList.remove("up","hit","break");
+      h.el.classList.remove("inactive");
     });
-    comboLabelEl.textContent = "SMASHED: 0/" + (cfg().smashBreaksToWin||10);
+    comboLabelEl.textContent = "SMASHED: 0/" + (cfg().smashBreaksToWin||5);
     comboLabelEl.classList.remove("hot");
     scheduleNextSmashSpawn(400);
   }
@@ -1322,13 +1656,93 @@
   }
 
   function showLevelCompleteBtn(){
-    evolveBtn.classList.add("show");
-    evolveBtn.textContent = "⚡ ADD UPGRADE! ⚡";
+    var c = cfg();
+    clearRoundNumEl.textContent = String(levelIndex + 1);
+    clearTagEl.textContent = c.clearTag || "ROUND WON";
+    clearHeadlineEl.textContent = c.clearHeadline || c.text;
+    clearFeatureNameEl.textContent = c.text;
+    clearBodyEl.textContent = c.clearBody || "";
+    var isLast = levelIndex >= LEVELS.length - 1;
+    evolveBtn.textContent = "⚡ " + (c.clearBtn || (isLast ? "FINISH THE FIGHT" : "NEXT ROUND")) + " ⚡";
+    levelClearOverlay.classList.add("show");
     skipBtn.classList.add("hide");
   }
   function hideLevelCompleteBtn(){
-    evolveBtn.classList.remove("show");
+    levelClearOverlay.classList.remove("show");
     skipBtn.classList.remove("hide");
+  }
+
+  // ---------------- BAG BREAK-FREE (Level 1 finisher) ----------------
+  // On the last hit of Level 1 the bag snaps off the chain and drops to the
+  // mat under its own "gravity" instead of just swinging — a proper unhook.
+  // The bag is re-parented out of #pendulum (so the now-empty chain keeps
+  // swaying on the hook, unaffected) into #app as a free-floating element
+  // positioned exactly where it already was, then eased down/rotated to rest
+  // on the ring mat. It's re-attached to the pendulum before Level 4 (hunter),
+  // the next mechanic that needs the hanging bag.
+  var bagIsBroken = false;
+  function breakBagFree(onSettled){
+    var rect = bag.getBoundingClientRect();
+    var matRect = ringMat.getBoundingClientRect();
+
+    var fallSign = Math.abs(omega) > 0.05 ? (omega > 0 ? 1 : -1) : (Math.random() < 0.5 ? 1 : -1);
+
+    // a little recoil kick on the now-lightened chain, as if the weight just left it
+    omega += fallSign * -0.7;
+
+    bag.style.transition = "none";
+    bag.style.position = "fixed";
+    bag.style.left = rect.left + "px";
+    bag.style.top = rect.top + "px";
+    bag.style.width = rect.width + "px";
+    bag.style.height = rect.height + "px";
+    bag.style.margin = "0";
+    bag.style.transformOrigin = "50% 50%";
+    bag.style.transform = "rotate(" + theta + "rad)";
+    bag.style.zIndex = "11";
+    bag.classList.remove("squish");
+    app.appendChild(bag);
+    bagIsBroken = true;
+    void bag.offsetWidth; // force reflow before animating
+
+    var restTop = matRect.top - rect.height*0.32;
+    var driftX = fallSign * (30 + Math.random()*40);
+    var tumble = theta + fallSign * (2.3 + Math.random()*0.7); // ~130-175deg extra tumble
+
+    requestAnimationFrame(function(){
+      bag.style.transition = "top 0.6s cubic-bezier(.5,0,.85,.65), left 0.6s ease-out, transform 0.6s cubic-bezier(.45,0,.7,.75)";
+      bag.style.top = restTop + "px";
+      bag.style.left = (rect.left + driftX) + "px";
+      bag.style.transform = "rotate(" + tumble + "rad)";
+    });
+
+    setTimeout(function(){
+      // impact: squash on landing + dust burst + shake, then settle
+      screenShake();
+      spawnHitBurst(rect.left + driftX + rect.width/2, restTop + rect.height*0.8);
+      bag.style.transition = "transform 0.3s cubic-bezier(.34,1.56,.64,1)";
+      bag.style.transform = "rotate(" + tumble + "rad) scale(1.12,0.8)";
+      setTimeout(function(){
+        bag.style.transform = "rotate(" + tumble + "rad) scale(1,1)";
+      }, 100);
+      setTimeout(function(){ if(onSettled) onSettled(); }, 340);
+    }, 620);
+  }
+
+  function restoreBagToRig(){
+    if(!bagIsBroken) return;
+    bagIsBroken = false;
+    bag.style.transition = "";
+    bag.style.position = "";
+    bag.style.left = "";
+    bag.style.top = "";
+    bag.style.width = "";
+    bag.style.height = "";
+    bag.style.margin = "";
+    bag.style.transformOrigin = "";
+    bag.style.transform = "";
+    bag.style.zIndex = "";
+    pendulum.appendChild(bag);
   }
 
   // Fills the meter and puts the level into its "won" state — used both when
@@ -1339,7 +1753,11 @@
     updateMeterUI();
     meterLocked = true;
     interactionLocked = true;
-    showLevelCompleteBtn();
+    if(cfg().mechanic === "swing"){
+      breakBagFree(showLevelCompleteBtn);
+    } else {
+      showLevelCompleteBtn();
+    }
   }
 
   // ---------------- META HUD (lifetime timer + run count) ----------------
@@ -1354,6 +1772,8 @@
   function updateMetaHud(){
     metaTimeEl.textContent = "TIME " + formatTime(totalTimeMs);
     metaRunsEl.textContent = "RUNS " + totalRuns;
+    if(introStatTimeEl) introStatTimeEl.textContent = formatTime(totalTimeMs);
+    if(introStatRunsEl) introStatRunsEl.textContent = String(totalRuns);
   }
   function loadPersisted(){
     try{
@@ -1584,6 +2004,7 @@
 
   function advanceLevel(){
     hideLevelCompleteBtn();
+    restoreBagToRig();
     levelIndex++;
     meter = 0; meterLocked = false; interactionLocked = false;
     comboStreak = 0; lastClickX = null; lastClickY = null;
